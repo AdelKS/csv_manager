@@ -1,4 +1,14 @@
 import csv
+import tkinter as tk
+from tkinter import filedialog
+
+
+def get_file_name_with_dialog():
+    root = tk.Tk()
+    root.withdraw()
+
+    return filedialog.askopenfilename()
+
 
 def is_number(s):
     try:
@@ -20,24 +30,25 @@ class CSV_Reader:
         if csv_file in self.parsed_files:
             return
         
-        parse = ParsedFile()
+        parsing = ParsedFile()
         with open(csv_file) as openFile:
             reader = csv.reader(openFile, delimiter=csv_separator)
             columns = 1
             for row_number, row_content in enumerate(reader):
                 if row_number == 0:
                     columns = len(row_content)
-                    parse.val_columns = [ [] for i in range(columns)]
+                    parsing.val_columns = [ [] for i in range(columns)]
                     for col, val in enumerate(row_content):
-                        if not is_number(val):
-                            parse.column_names[val] = col
+                        if is_number(val):
+                            parsing.val_columns[col].append(float(val))                           
                         else:
-                            parse.val_columns[col].append(val)
+                            parsing.column_names[val] = col
                 else:
                     for col, val in enumerate(row_content):
-                        parse.val_columns[col].append(val)
+                        if is_number(val):
+                            parsing.val_columns[col].append(float(val))
         
-        self.parsed_files[csv_file] = parse
+        self.parsed_files[csv_file] = parsing
 
     def get_column(self, csv_file, col):
         # col can be either a string or an integer index
