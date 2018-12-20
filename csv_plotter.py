@@ -1,3 +1,5 @@
+# Author: Adel KARA SLIMANE <adel.kara-slimane@cea.fr>
+
 import matplotlib as mpl
 from csv_reader import *
 
@@ -6,9 +8,9 @@ import matplotlib.pyplot as plt
 plt.rcParams['figure.figsize'] = (11.69,8.27)
 plt.rcParams['text.usetex'] = True
 plt.rcParams['axes.formatter.useoffset'] = True
-plt.rcParams['axes.formatter.limits'] = (-3, 3)
+plt.rcParams['axes.formatter.limits'] = (-2, 2)
 
-#plt.rcParams['axes.grid'] = True
+plt.rcParams['axes.grid'] = True
 plt.rcParams['font.size'] = 20
 
 class CSV_Plotter:
@@ -33,15 +35,30 @@ class CSV_Plotter:
         if alias != None:
             self.file_aliases[alias] = csv_file
        
-        self.file_aliases[csv_file] = csv_file        
+        self.file_aliases[csv_file] = csv_file     
 
-    def plot(self, alias, x_column, y_column, graph_row, graph_column, **kwargs):        
-        x_vals = self.csv_reader.get_column(self.file_aliases[alias], x_column)
-        y_vals = self.csv_reader.get_column(self.file_aliases[alias], y_column)            
-        self.graphs[graph_row][graph_column].plot(x_vals, y_vals, **kwargs)
-        self.graphs[graph_row][graph_column].grid()
+    def get(self, alias, expr):
+        return self.csv_reader.get(self.file_aliases[alias], expr)
+
+    def plot(self, alias, x_expr, y_expr, graph_row, graph_column, **kwargs):    
+        '''
+            x_expr and y_expr can either be:
+            - an integer: it corresponds to the column index in the csv
+            - string: 
+                - a column's name
+                - an expression involving as variables the column names of the csv file
+        '''
+
+        x_vals = self.csv_reader.get(self.file_aliases[alias], x_expr)
+        y_vals = self.csv_reader.get(self.file_aliases[alias], y_expr)            
+        lines = self.graphs[graph_row][graph_column].plot(x_vals, y_vals, **kwargs)
         if 'label' in kwargs and kwargs['label']:
-            self.graphs[graph_row][graph_column].legend()        
+            self.graphs[graph_row][graph_column].legend()
+        
+        return lines 
+
+    def plot_vals(self, x_vals, y_vals, graph_row, graph_column, **kwargs):
+        return self.graphs[graph_row][graph_column].plot(x_vals, y_vals, **kwargs)
 
     def set(self, row, col, **kwargs):
         self.graphs[row][col].set(**kwargs)
