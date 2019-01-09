@@ -13,14 +13,12 @@ plt.rcParams['axes.formatter.limits'] = (-2, 2)
 plt.rcParams['axes.grid'] = True
 plt.rcParams['font.size'] = 20
 
-class CSV_Plotter:
+class CSV_Plotter(CSV_Reader):
     def __init__(self, num_rows = 1, num_columns = 1, share_x = False, share_y = False):
+        CSV_Reader.__init__(self)
         self.fig, self.graphs = plt.subplots(num_rows, num_columns, sharex=share_x, sharey=share_y)
         self.num_rows = num_rows
-        self.num_columns = num_columns
-        self.csv_reader = CSV_Reader()
-
-        self.file_aliases = dict()
+        self.num_columns = num_columns       
 
         if num_rows == 1:
             if num_columns == 1:
@@ -28,17 +26,7 @@ class CSV_Plotter:
             else:
                 self.graphs = [self.graphs]
         elif num_columns == 1:
-            self.graphs = [[graph] for graph in self.graphs]
-
-    def load(self, csv_file, alias=None, csv_separator = ' '):
-        self.csv_reader.parse(csv_file, csv_separator)
-        if alias != None:
-            self.file_aliases[alias] = csv_file
-       
-        self.file_aliases[csv_file] = csv_file     
-
-    def get(self, alias, expr):
-        return self.csv_reader.get(self.file_aliases[alias], expr)
+            self.graphs = [[graph] for graph in self.graphs] 
 
     def plot(self, alias, x_expr, y_expr, graph_row, graph_column, **kwargs):    
         '''
@@ -49,8 +37,8 @@ class CSV_Plotter:
                 - an expression involving as variables the column names of the csv file
         '''
 
-        x_vals = self.csv_reader.get(self.file_aliases[alias], x_expr)
-        y_vals = self.csv_reader.get(self.file_aliases[alias], y_expr)            
+        x_vals = self.get(alias, x_expr)
+        y_vals = self.get(alias, y_expr)            
         lines = self.graphs[graph_row][graph_column].plot(x_vals, y_vals, **kwargs)
         if 'label' in kwargs and kwargs['label']:
             self.graphs[graph_row][graph_column].legend()

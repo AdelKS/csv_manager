@@ -28,10 +28,14 @@ class ParsedFile:
 class CSV_Reader:
     def __init__(self):
         self.parsed_files = dict()
+        self.file_aliases = dict()
 
-    def parse(self, csv_file, csv_separator=' '):
-        if csv_file in self.parsed_files:
-            return
+    def load(self, csv_file, alias=None, csv_separator=' '):       
+
+        if alias != None:
+            self.file_aliases[alias] = csv_file
+       
+        self.file_aliases[csv_file] = csv_file     
         
         parsing = ParsedFile()
         last_column_empty = True
@@ -63,13 +67,13 @@ class CSV_Reader:
 
         self.parsed_files[csv_file] = parsing
 
-    def get(self, csv_file, expr):
+    def get(self, file_alias, expr):
         # col can be either a string or an integer index
-        if not csv_file in self.parsed_files:
-            raise "CSV File not loaded beforehand"    
+        if not self.file_aliases[file_alias] in self.parsed_files:
+            raise EnvironmentError("CSV File not loaded beforehand" )  
 
-        col_names = self.parsed_files[csv_file].column_names
-        col_vals = self.parsed_files[csv_file].column_vals
+        col_names = self.parsed_files[self.file_aliases[file_alias]].column_names
+        col_vals = self.parsed_files[self.file_aliases[file_alias]].column_vals
         
         if is_number(expr):
             # the column's index is given
@@ -93,7 +97,9 @@ class CSV_Reader:
                 vals.append(expr.evaluate(var_values_dict))
 
             return vals       
-        
 
     def free(self, csv_file):
         del self.parsed_files[csv_file]
+        for key in self.file_aliases:
+            if self.file_aliases[key] == csv_file:
+                del self.file_aliases[key]
