@@ -1,5 +1,3 @@
-# Author: Adel KARA SLIMANE <adel.kara-slimane@cea.fr>
-
 import matplotlib as mpl
 from csv_reader import *
 
@@ -45,8 +43,15 @@ class CSV_Plotter(CSV_Reader):
         
         return lines 
 
-    def plot_vals(self, x_vals, y_vals, graph_row, graph_column, **kwargs):
-        return self.graphs[graph_row][graph_column].plot(x_vals, y_vals, **kwargs)
+    def plot_data(self, graph_row, graph_column, *args, **kwargs):
+        '''
+            Use the regular plt.plot() with its args
+        '''
+        fig = self.graphs[graph_row][graph_column].plot(*args, **kwargs)
+        if 'label' in kwargs and kwargs['label']:
+            self.graphs[graph_row][graph_column].legend()
+        return fig
+        
 
     def set(self, row, col, **kwargs):
         self.graphs[row][col].set(**kwargs)
