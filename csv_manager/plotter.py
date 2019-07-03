@@ -27,7 +27,7 @@ class Plotter(Reader):
         elif num_columns == 1:
             self.graphs = [[graph] for graph in self.graphs] 
 
-    def plot(self, alias, x_expr, y_expr, graph_row, graph_column, **kwargs):    
+    def plot(self, alias, x_expr, y_expr, graph_row=0, graph_column=0, **kwargs):    
         '''
             x_expr and y_expr can either be:
             - an integer: it corresponds to the column index in the csv
