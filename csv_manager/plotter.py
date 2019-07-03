@@ -1,19 +1,20 @@
 import matplotlib as mpl
-from csv_reader import *
+from .reader import *
 
 import matplotlib.pyplot as plt
 
-plt.rcParams['figure.figsize'] = (11.69,8.27)
 plt.rcParams['text.usetex'] = True
+
+plt.rcParams['figure.figsize'] = (11.69,8.27)
 plt.rcParams['axes.formatter.useoffset'] = True
 plt.rcParams['axes.formatter.limits'] = (-2, 2)
 
 plt.rcParams['axes.grid'] = True
 plt.rcParams['font.size'] = 20
 
-class CSV_Plotter(CSV_Reader):
+class Plotter(Reader):
     def __init__(self, num_rows = 1, num_columns = 1, share_x = False, share_y = False):
-        CSV_Reader.__init__(self)
+        super().__init__()
         self.fig, self.graphs = plt.subplots(num_rows, num_columns, sharex=share_x, sharey=share_y)
         self.num_rows = num_rows
         self.num_columns = num_columns       

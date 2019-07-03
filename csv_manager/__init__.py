@@ -1,4 +1,2 @@
-__all__ = ["reader", "plotter"]
-
-import .plotter
-import .reader
+from .plotter import Plotter
+from .reader import Reader

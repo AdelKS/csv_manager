@@ -1,5 +1,3 @@
-# Author: Adel KARA SLIMANE <adel.kara-slimane@cea.fr>
-
 import csv
 import tkinter as tk
 from tkinter import filedialog
@@ -25,7 +23,7 @@ class ParsedFile:
         self.column_vals = []
         self.column_names = dict()
 
-class CSV_Reader:
+class Reader:
     def __init__(self):
         self.parsed_files = dict()
         self.file_aliases = dict()

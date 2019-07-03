@@ -1,6 +1,6 @@
-from csv_plotter import *
+from csv_manager.plotter import Plotter
 
-plotter = CSV_Plotter(num_rows=1, num_columns=2)
+plotter = Plotter(num_rows=1, num_columns=2)
 
 file1 = 'test_file.csv'
 
