@@ -15,12 +15,18 @@ plt.rcParams['font.size'] = 20
 class Plotter(Reader):
     def __init__(self, num_rows = 1, num_columns = 1, share_x = False, share_y = False):
         super().__init__()
-        self.fig, self.graphs = plt.subplots(num_rows, num_columns, sharex=share_x, sharey=share_y)
+        self.share_x = share_x
+        self.share_y = share_y        
         self.num_rows = num_rows
-        self.num_columns = num_columns       
+        self.num_columns = num_columns
 
-        if num_rows == 1:
-            if num_columns == 1:
+        self._instance_new_subplots()
+
+    def _instance_new_subplots(self):
+        self.fig, self.graphs = plt.subplots(self.num_rows, self.num_columns, sharex=self.share_x, sharey=self.share_y)
+
+        if self.num_rows == 1:
+            if self.num_columns == 1:
                 self.graphs = [[self.graphs]]
             else:
                 self.graphs = [self.graphs]
@@ -59,6 +65,7 @@ class Plotter(Reader):
 
     def show(self):         
         plt.show()
+        self._instance_new_subplots()
 
 
       
