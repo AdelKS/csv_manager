@@ -11,6 +11,12 @@ file1 = 'test_file.csv'
 
 plotter.load(file1, alias='test file')
 
+plotter.show_loaded_data()
+# prints the loaded file names, their aliases and the column names
+
+plotter.get_column_names('test file')
+# returns the list of column names of test file
+
 ######################################################
 
 plotter.plot('test file', 'time', 'position', 0, 0, label='position $x(t)$', color='red', linestyle=':')
