@@ -67,5 +67,9 @@ class Plotter(Reader):
         plt.show()
         self._instance_new_subplots()
 
+    def savefig(self, *args, **kwargs):
+        plt.savefig(*args, **kwargs)
+        self._instance_new_subplots()
+
 
       
