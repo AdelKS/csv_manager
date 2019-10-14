@@ -72,5 +72,8 @@ class Plotter(Reader):
         plt.close()
         self._instance_new_subplots()
 
+    def legend(self, *args, **kwargs):
+        plt.legend(*args, **kwargs)
+
 
       
