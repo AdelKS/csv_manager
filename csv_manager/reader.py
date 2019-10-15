@@ -20,10 +20,11 @@ def is_number(s):
     except ValueError:
         return False
 
-class ParsedFile:
+class DataSet:
     def __init__(self):
         self.column_vals = []
         self.column_names = dict()
+        self.source_files = []
 
 class Reader:
     r"""
@@ -33,10 +34,9 @@ class Reader:
     """
 
     def __init__(self):
-        self.parsed_files = dict()
-        self.file_aliases = dict()
+        self.datasets = dict()      
 
-    def load(self, csv_file: str, alias : str = None, csv_separator : str = ' ') -> None:       
+    def load(self, csv_file: str, alias : str, csv_separator : str = ' ') -> None:       
         r"""
         Loads the CSV file pointed by `csv_file` into memory. This step
         should be done first before requesting any data from the file through
@@ -49,49 +49,66 @@ class Reader:
             The absolute or relative path to the file to load.
 
         alias : str
-            The alias to give to the file, the file can be referred to with its alias 
-            when querying data from it.
+            The alias to give to the file, the data in the file can be accessed with it. If
+            the user loads two files and give the same alias for both, their data will be put
+            together: if two columns share the same name the last one loaded will have "_b" 
+            appended to its name.
 
         csv_separator : str
             The separator string used to separate between columns at any given line in the 
             CSV file. The default is a blank space ' ' (even though the name CSV says otherwise)
 
-        """
-        if alias != None:
-            self.file_aliases[alias] = csv_file
+        """        
+
+        if not isinstance(alias, str):
+            raise ValueError("A string alias must be given for the csv file to load.")        
        
-        self.file_aliases[csv_file] = csv_file     
-        
-        parsing = ParsedFile()
-        last_column_empty = True
         with open(csv_file) as openFile:
             reader = csv.reader(openFile, delimiter=csv_separator)
+            
+            dataset = None
+            if alias in self.datasets.keys():
+                dataset = self.datasets[alias]
+            else:
+                self.datasets[alias] = DataSet()
+                dataset = self.datasets[alias]
+
+            dataset.source_files.append(csv_file)
+        
+            last_column_empty = True
+
             columns = 1
+            start_col = 0
             for row_number, row_content in enumerate(reader):                
                 if row_content[-1]:
                     last_column_empty = False
                 if row_number == 0:
                     columns = len(row_content)
-                    parsing.column_vals = [ [] for i in range(columns)]
+                    start_col = len(dataset.column_vals)
+                    dataset.column_vals.extend([ [] for i in range(columns)])
                     for col, val in enumerate(row_content):
+                        col_ind = col + start_col
                         if is_number(val):
-                            parsing.column_vals[col].append(float(val))  
-                            parsing.column_names[col+1] = col # the column's name is its index (starting from 1)
+                            dataset.column_vals[col_indl].append(float(val))  
+                            dataset.column_names[col_ind + 1] = col_ind # the column's name is its index (starting from 1)
                         else:
-                            parsing.column_names[val] = col
+                            col_name = val
+                            if val in dataset.column_names:                                
+                                while col_name in dataset.column_names:
+                                    col_name += "_b"
+                            dataset.column_names[col_name] = col_ind
                 else:                    
                     if row_content[-1]:
                         last_column_empty = False
                     for col, val in enumerate(row_content):
+                        col_ind = col + start_col
                         if is_number(val):
-                            parsing.column_vals[col].append(float(val))
+                            dataset.column_vals[col_ind].append(float(val))
         
-        if last_column_empty:
-            # last column empty, removing it 
-            del parsing.column_vals[-1]
-            del parsing.column_names['']
-
-        self.parsed_files[csv_file] = parsing
+            if last_column_empty:
+                # last column empty, removing it 
+                del dataset.column_vals[-1]
+                del dataset.column_names['']
 
 
     def get_column_names(self, alias: str) -> typing.List[str]:
@@ -102,16 +119,15 @@ class Reader:
         ----------
 
         alias : str
-            The file name or alias of loaded file for which to return the column names. 
+            The alias of the dataset for which to return the column names. 
 
         Returns
         -------
 
         A list of strings, each being a column name
         """
-
-        parsing = self.parsed_files[self.file_aliases[alias]]
-        return list(parsing.column_names.keys())      
+        
+        return list(self.datasets[alias].column_names.keys())      
 
 
     def show_loaded_data(self, alias : str = None) -> None:
@@ -127,29 +143,30 @@ class Reader:
         """
 
         if not alias:
-            for (file_name, parsing) in self.parsed_files.items():
+            for alias, dataset in self.datasets.items():
                 print("----------------------------------------")
-                print("File: ", file_name)
-                aliases = [nick for (nick, file) in self.file_aliases.items() if (file_name == file and nick != file_name)]
-                if aliases:
-                    print("Alias: ", aliases[0])
+                print("Dataset alias: ", alias)
+                print("Source files:")
+                for source_file in dataset.source_files:
+                    print("\t", source_file)               
                 print("Column names: ")
-                for name in parsing.column_names.keys():
-                    print("   ", name)
+                for name in dataset.column_names.keys():
+                    print("\t", name)
 
         else:
             print("----------------------------------------")
-            print("File: ", [file_name for (nick, file_name) in self.file_aliases.items() if nick == alias][0])
-            print("Alias: ", alias)
-
-            parsing = self.parsed_files[self.file_aliases[alias]]
+            dataset = self.datasets[alias]
+            print("Dataset alias: ", alias)
+            print("Source files:")
+            for source_file in dataset.source_files:
+                print("\t", source_file)               
             print("Column names: ")
-            for name in parsing.column_names.keys():
-                print("   ", name)
+            for name in dataset.column_names.keys():
+                print("\t", name)
 
 
 
-    def get(self, file_alias: str, expr: str) -> typing.List[float]:
+    def get(self, alias: str, expr: str) -> typing.List[float]:
         r"""
         Returns the column whose name is given by `expr`, from the file given in `file_alias`.
         Note that `expr` can be a mathematical expression, like :math:` 2 * time + offset`
@@ -158,12 +175,12 @@ class Reader:
         Parameters
         ----------
 
-        file_alias : str
-            The desired file path of alias from which to retrieve/calculate `expr`
+        alias : str
+            The alias of the dataset to get data from
 
         expr : str
-            The desired column name to retrieve, or mathematical expression involving the file's column
-            names to calculate and retrieve
+            The desired column name to retrieve, or mathematical expression involving the dataset's column
+            names to calculate and return
 
         Returns
         -------
@@ -173,11 +190,11 @@ class Reader:
         """
 
         # col can be either a string or an integer index
-        if not self.file_aliases[file_alias] in self.parsed_files:
-            raise EnvironmentError("CSV File not loaded beforehand" )  
+        if alias not in self.datasets.keys():
+            raise ValueError("Alias doesn't exist.")
 
-        col_names = self.parsed_files[self.file_aliases[file_alias]].column_names
-        col_vals = self.parsed_files[self.file_aliases[file_alias]].column_vals
+        col_names = self.datasets[alias].column_names
+        col_vals = self.datasets[alias].column_vals
         
         if is_number(expr):
             # the column's index is given
@@ -202,18 +219,16 @@ class Reader:
 
             return vals       
 
-    def delete(self, file_alias : str) -> None:
+    def delete(self, alias : str) -> None:
         r"""
-        Unload the perviously loaded `csv_file` from memory
+        Unload a dataset from memory
 
         Parameters:
         -----------
 
-        file_alias : str
-            Alias of file path (as given when the file has been loaded) to be unloaded from memory
+        alias : str
+            Alias of the dataset to be unloaded from memory
 
         """
-        del self.parsed_files[self.file_aliases[file_alias]]
-        for key in self.file_aliases:
-            if self.file_aliases[key] == csv_file:
-                del self.file_aliases[key]
+        del self.datasets[alias]
+       
