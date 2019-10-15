@@ -5,8 +5,8 @@ def readme():
         return f.read()
 
 setup(name='csv_manager',
-      version='0.3',
-      description='A simple CSV importer/exporter with plotting capababilities with matplotlib',
+      version='0.4',
+      description='A simple CSV importer/exporter with plotting capabilities with matplotlib',
       long_description=readme(),
       long_description_content_type="text/markdown",
       keywords='csv export import plot matplotlib',
