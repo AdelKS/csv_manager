@@ -92,10 +92,9 @@ class Reader:
                             dataset.column_vals[col_indl].append(float(val))  
                             dataset.column_names[col_ind + 1] = col_ind # the column's name is its index (starting from 1)
                         else:
-                            col_name = val
-                            if val in dataset.column_names:                                
-                                while col_name in dataset.column_names:
-                                    col_name += "_b"
+                            col_name = val                               
+                            while col_name in dataset.column_names:
+                                col_name += "_b"
                             dataset.column_names[col_name] = col_ind
                 else:                    
                     if row_content[-1]:
