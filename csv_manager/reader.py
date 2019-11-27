@@ -12,13 +12,48 @@ def get_file_name_with_dialog():
 
     return filedialog.askopenfilename()
 
+def identity(val):
+    return val
 
-def is_number(s):
+def get_complex(val):
+    if is_complex(val):
+        return complex(val)
+    else:
+        return complex("nan")
+
+def is_integer(s):
+    try:
+        complex(s)
+        return True
+    except ValueError:
+        return False
+
+def get_integer(val):
+    if is_integer(val):
+        return int(val)
+    else:
+         raise ValueError("Casting a non integer value: ", val)
+
+def is_integer(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def get_float(val):
+    if is_float(val):
+        return float(val)
+    else:
+        return float("nan")
+
+def is_float(s):
     try:
         float(s)
         return True
     except ValueError:
         return False
+
 
 class DataSet:
     def __init__(self):
@@ -87,22 +122,17 @@ class Reader:
                     start_col = len(dataset.column_vals)
                     dataset.column_vals.extend([ [] for i in range(columns)])
                     for col, val in enumerate(row_content):
-                        col_ind = col + start_col
-                        if is_number(val):
-                            dataset.column_vals[col_indl].append(float(val))  
-                            dataset.column_names[col_ind + 1] = col_ind # the column's name is its index (starting from 1)
-                        else:
-                            col_name = val                               
-                            while col_name in dataset.column_names:
-                                col_name += "_b"
-                            dataset.column_names[col_name] = col_ind
+                        col_ind = col + start_col                        
+                        col_name = val                               
+                        while col_name in dataset.column_names:
+                            col_name += "_b"
+                        dataset.column_names[col_name] = col_ind
                 else:                    
                     if row_content[-1]:
                         last_column_empty = False
                     for col, val in enumerate(row_content):
                         col_ind = col + start_col
-                        if is_number(val):
-                            dataset.column_vals[col_ind].append(float(val))
+                        dataset.column_vals[col_ind].append(val)
         
             if last_column_empty:
                 # last column empty, removing it 
@@ -165,7 +195,7 @@ class Reader:
 
 
 
-    def get(self, alias: str, expr: str) -> typing.List[float]:
+    def get(self, alias: str, expr: str, data_type: str = "float") -> typing.List[typing.Union[float, str, int, complex]]:
         r"""
         Returns the column whose name is given by `expr`, from the file given in `file_alias`.
         Note that `expr` can be a mathematical expression, like :math:` 2 * time + offset`
@@ -181,12 +211,21 @@ class Reader:
             The desired column name to retrieve, or mathematical expression involving the dataset's column
             names to calculate and return
 
+        data_type : str
+            "string", "integer", "float" or "complex", the type in which method tries to cast the data to before returning it.
+            If `expr' is a mathematical expression, `type' can't be "string"
+
         Returns
         -------
 
-        A list of floats containing the result of `expr`
+        A list of `type` containing the result of `expr`
 
         """
+
+        data_caster_dict = {"string": identity, "float": get_float, "integer": get_integer, "complex": get_complex}
+
+        if data_type not in data_caster_dict.keys():
+            raise ValueError("the given `data_type' doesn't match any known types. Which are `string', `integer', `float' or `complex'")
 
         # col can be either a string or an integer index
         if alias not in self.datasets.keys():
@@ -195,16 +234,18 @@ class Reader:
         col_names = self.datasets[alias].column_names
         col_vals = self.datasets[alias].column_vals
         
-        if is_number(expr):
+        if is_integer(expr):
             # the column's index is given
             index = expr
-            return col_vals[index]
+            return [data_caster_dict[data_type](val) for val in col_vals[index]]
         
         elif expr in col_names:
             # a column name has been given
-            return col_vals[col_names[expr]]
+            return [data_caster_dict[data_type](val) for val in col_vals[col_names[expr]]]
         
         else:
+            if data_type == "string":
+                raise ValueError(" `data_type' can't be `string' if a mathematical expression is asked ")
             # Assume that col general mathematical expression, involving column names as variables
             parser = Parser()
             expr = parser.parse(expr)
@@ -213,7 +254,7 @@ class Reader:
                       
             for i in range(len(col_vals[0])):
                 for var_name in col_names.keys():
-                    var_values_dict[var_name] = col_vals[col_names[var_name]][i]
+                    var_values_dict[var_name] = data_caster_dict[data_type](col_vals[col_names[var_name]][i])
                 vals.append(expr.evaluate(var_values_dict))
 
             return vals       
@@ -229,5 +270,6 @@ class Reader:
             Alias of the dataset to be unloaded from memory
 
         """
-        del self.datasets[alias]
+        if alias in self.datasets.keys():
+            del self.datasets[alias]
        
