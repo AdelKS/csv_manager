@@ -13,7 +13,26 @@ plt.rcParams['axes.grid'] = True
 plt.rcParams['font.size'] = 20
 
 class Plotter(Reader):
-    def __init__(self, num_rows = 1, num_columns = 1, share_x = False, share_y = False):
+    def __init__(self, num_rows: int = 1, num_columns: int = 1, share_x: bool = False, share_y: bool = False):
+        r"""
+        Creates a Plotter class instance, used to plot 2D data using matplotlib
+
+        Parameters
+        ----------
+
+        num_rows : int
+            The number of rows of subplots
+
+        num_columns : int
+            The number of columns of subplots
+
+        share_x : bool
+            Whether or not subplots of the same column share their x axis min, max and ticks
+
+        share_y : bool
+            Whether or not subplots of the same row share their y axis min, max and ticks
+
+        """       
         super().__init__()
         self.share_x = share_x
         self.share_y = share_y        
