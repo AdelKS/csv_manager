@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import matplotlib as mpl
 from .reader import *
 
@@ -87,6 +90,10 @@ class Plotter(Reader):
         self._instance_new_subplots()
 
     def savefig(self, *args, **kwargs):
+        file_path = args[0]
+        file_folder = Path(file_path).parent
+        os.makedirs(file_folder, exist_ok=True)
+
         plt.savefig(*args, **kwargs)
         plt.close()
         self._instance_new_subplots()
