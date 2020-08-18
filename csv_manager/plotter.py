@@ -16,7 +16,7 @@ plt.rcParams['axes.grid'] = True
 plt.rcParams['font.size'] = 20
 
 class Plotter(Reader):
-    def __init__(self, num_rows: int = 1, num_columns: int = 1, share_x: bool = False, share_y: bool = False, fig_num=1):
+    def __init__(self, num_rows: int = 1, num_columns: int = 1, share_x: bool = False, share_y: bool = False, fig_num=None):
         r"""
         Creates a Plotter class instance, used to plot 2D data using matplotlib
 
@@ -43,10 +43,12 @@ class Plotter(Reader):
         self.num_columns = num_columns
 
         self.fig_num = fig_num
+        self.fig = None
 
         self._instance_new_subplots()
 
-    def _instance_new_subplots(self):
+    def _instance_new_subplots(self):       
+
         self.fig, self.graphs = plt.subplots(self.num_rows, self.num_columns, sharex=self.share_x, sharey=self.share_y, num=self.fig_num)
 
         if self.num_rows == 1:
@@ -54,7 +56,7 @@ class Plotter(Reader):
                 self.graphs = [[self.graphs]]
             else:
                 self.graphs = [self.graphs]
-        elif num_columns == 1:
+        elif self.num_columns == 1:
             self.graphs = [[graph] for graph in self.graphs] 
 
     def plot(self, alias, x_expr, y_expr, graph_row=0, graph_column=0, **kwargs):    
