@@ -1,8 +1,10 @@
 ## csv_manager
 
-This is a python module that features two simple classes for reading (class `Reader`) and plotting (class `Plotter`), and a method for writing CSVs, using Matplotlib (Latex rendering enabled) for the plots.
+This is a python module that features three simple classes for reading (class `Reader`), plotting (class `Plotter`, using Matplotlib with Latex rendering enabled) for the plots) and filtering (class `Database`) CSV files. And also a method for writing CSVs.
 
 By using this module, the user avoids the cumbersome repetition of coding a csv reader using the `csv` python library then making the data in a readable structure for `plt.plot(...)`.
+
+#### Using `Reader` and `Plotter`
 
 An example is written in `example/csv_plot_example.py`, that showcases what can be done with this module:
 
@@ -79,6 +81,25 @@ time speed
 9 8
 10 7
 ```
+
+#### Using `Database`
+
+If you have a folder with lots of CSV files and find it too cumbersome to find the correct ones to plot or read. The class `Databse` is made for you!
+
+Requirements:
+- Follow a specific naming scheme on your CSV files: `filename|var1=val1|var2=val2|...|varN=valN.csv` where `|` is a separator that can be different (any string of characters).
+- Have all your CSV files in a folder (work if they are in a subfolder of that folder)
+
+Then, what you can do is to create a `Database` instance with the folder path, and then you can use its method `filter_datafiles`:
+
+```python
+def filter_datafiles(self, file_name_base: str, filter_dict : dict) -> List[DataFile]:
+```
+where:
+- `file_name_base` is a string that the file should contain in its filename (the text before the var definitions start)
+- `filter_dict` is a dictionnary that contains `(key, val)` pairs, both strings, that correspond to `varN=valN` in the csv files you are looking for.
+
+And this method will return all the files that match your filters.
 
 ## Dependencies:
 
