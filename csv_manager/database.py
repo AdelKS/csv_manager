@@ -29,13 +29,13 @@ class DataFile:
                 key, value = string.split("=")
                 self.pars[key] = value
 
+        self.unique_pars = self.pars.copy()
+
     def compute_unique_pars(self, datafiles):
         self.unique_pars.clear()
-        for i, datafile in enumerate(datafiles):
-            if str(datafile.filepath) != str(self.filepath):
-                for key, val in self.pars.items():
-                    if key not in datafile.pars.keys() or val != datafile.pars[key]:
-                        self.unique_pars[key] = val
+        for key, val in self.pars.items():
+            if not all([key in datafile.pars.keys() and val == datafile.pars[key] for datafile in datafiles]):
+                self.unique_pars[key] = val
 
 class Database:
     def __init__(self, data_folder_path: str = "", file_var_separator: str = "|"):   
@@ -56,16 +56,27 @@ class Database:
         self.datafiles = [DataFile(str(filepath)) for filepath in self.filepaths]
         self.datafilesnum = len(self.datafiles)
     
-    def filter_datafiles(self, file_name_base: str, filter_dict : dict) -> List[DataFile]:
+    def filter_datafiles(self, keywords: list, filter_dict : dict) -> List[DataFile]:
         filtered_datafiles = []
         for datafile in self.datafiles:
-            if file_name_base in datafile.base_name and all([item in datafile.pars.items() for item in filter_dict.items()]):
+            if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.pars.items() for item in filter_dict.items()]):
                 filtered_datafiles.append(datafile)
         
         for filtered_datafile in filtered_datafiles:
             filtered_datafile.compute_unique_pars(filtered_datafiles)
 
         return filtered_datafiles
+
+    def compute_unique_pars(self, datafiles_subset : list):
+        """ 
+        Computes the unique parameters for each datafile in self.datafiles with respect
+        to datafules_subset list.
+        """
+        for datafile in self.datafiles:
+            datafile.compute_unique_pars(datafiles_subset)
+    
+    def sort_vs_unique_pars(self):
+        self.datafiles.sort(key=lambda datafile: len(datafile.unique_pars))
 
 
     
