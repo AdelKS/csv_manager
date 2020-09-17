@@ -1,16 +1,7 @@
 import csv
-import tkinter as tk
-from tkinter import filedialog
 from py_expression_eval import Parser
 
 import typing
-
-
-def get_file_name_with_dialog():
-    root = tk.Tk()
-    root.withdraw()
-
-    return filedialog.askopenfilename()
 
 def identity(val):
     return val
