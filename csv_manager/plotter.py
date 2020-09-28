@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import matplotlib as mpl
-from .reader import *
+from .datafile import DataFile
 
 import matplotlib.pyplot as plt
 
@@ -15,7 +15,7 @@ plt.rcParams['axes.formatter.limits'] = (-2, 2)
 plt.rcParams['axes.grid'] = True
 plt.rcParams['font.size'] = 20
 
-class Plotter(Reader):
+class Plotter():
     def __init__(self, num_rows: int = 1, num_columns: int = 1, share_x: bool = False, share_y: bool = False, fig_num=None):
         r"""
         Creates a Plotter class instance, used to plot 2D data using matplotlib
@@ -59,7 +59,7 @@ class Plotter(Reader):
         elif self.num_columns == 1:
             self.graphs = [[graph] for graph in self.graphs] 
 
-    def plot(self, alias, x_expr, y_expr, graph_row=0, graph_column=0, **kwargs):    
+    def plot(self, datafile: DataFile, x_expr, y_expr, graph_row=0, graph_column=0, **kwargs):    
         '''
             x_expr and y_expr can either be:
             - an integer: it corresponds to the column index in the csv
@@ -68,8 +68,8 @@ class Plotter(Reader):
                 - an expression involving as variables the column names of the csv file
         '''
 
-        x_vals = self.get(alias, x_expr)
-        y_vals = self.get(alias, y_expr)            
+        x_vals = datafile.get(x_expr)
+        y_vals = datafile.get(y_expr)            
         lines = self.graphs[graph_row][graph_column].plot(x_vals, y_vals, **kwargs)
         if 'label' in kwargs and kwargs['label']:
             self.graphs[graph_row][graph_column].legend()

@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import List
 
+from .datafile import DataFile
+
 def concatenate(string_list, inter_prepend="", return_prepend="", return_every=None):
     res = return_prepend
     for i, string in enumerate(string_list):
@@ -23,53 +25,17 @@ def dict_to_string(dic, separator = "|"):
             extension += separator
     return extension
 
-class DataFile:
-    def __init__(self, filepath = "", var_separator = "|"):
-        self.file_base = ""
-        self.filepath = filepath
-        self.var_separator = var_separator
-        self.pars = dict()
-        self.unique_pars = dict()
-        self.base_name = ""
-
-        self._populate_pars()
-
-    def _populate_pars(self):
-        self.filename = Path(self.filepath).name
-        if self.filename.endswith(".csv"):
-            self.filename = self.filename[:-4]
-
-        split = self.filename.split(self.var_separator)
-    
-        first = True
-        for string in split:
-            if first and "=" not in string:
-                self.base_name += string
-                self.file_base += string.replace("_", " ")
-            else:
-                first = False
-                key, value = string.split("=")
-                self.pars[key] = value
-
-        self.unique_pars = self.pars.copy()
-
-    def compute_unique_pars(self, datafiles):
-        self.unique_pars.clear()
-        for key, val in self.pars.items():
-            if not all([key in datafile.pars.keys() and val == datafile.pars[key] for datafile in datafiles]):
-                self.unique_pars[key] = val
-
 class Database:
-    def __init__(self, data_folder_path: str = "", file_var_separator: str = "|"):   
-
+    def __init__(self):
         self.datafiles = []
-        self.data_folder = data_folder_path
-        self.filepaths = []
-        self.datafilesnum = 0
-        self.file_var_separator = file_var_separator
 
-        if self.data_folder:
-            self._populate_database()
+    def load_from_folder(self, data_folder_path, csv_separator=" ", file_var_separator="|"):
+        """
+            Load all CSV files form the given folder
+        """
+
+        filepaths = list(Path(data_folder_path).rglob("*.csv"))
+        self.datafiles += [DataFile(str(filepath), csv_separator=csv_separator, var_separator=file_var_separator) for filepath in filepaths]
 
     def file_selection_prompt(self, already_selected_files : List[DataFile] = list()) -> DataFile :
 
@@ -105,7 +71,7 @@ class Database:
             
             print("Available files: ")        
             for i, datafile in reversed(list(enumerate(available_files))):
-                shortened_filename = datafile.base_name + dict_to_string(datafile.unique_pars, separator=self.file_var_separator)               
+                shortened_filename = datafile.base_name + dict_to_string(datafile.unique_pars, separator=datafile.filename_var_separator)               
                 print("    {0})  {1}".format(i+1, shortened_filename))
             
             if filter_dict or keywords:
@@ -138,18 +104,10 @@ class Database:
             else:
                 return available_files[int(chosen_index)-1]
 
-    def set_data_folder(self, data_folder : str):
-        self.data_folder = data_folder
-
-    def _populate_database(self):
-        self.filepaths = list(Path(self.data_folder).rglob("*.csv"))
-        self.datafiles = [DataFile(str(filepath)) for filepath in self.filepaths]
-        self.datafilesnum = len(self.datafiles)
-    
     def filter_datafiles(self, keywords: list, filter_dict : dict) -> List[DataFile]:
         filtered_datafiles = []
         for datafile in self.datafiles:
-            if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.pars.items() for item in filter_dict.items()]):
+            if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.sim_settings.items() for item in filter_dict.items()]):
                 filtered_datafiles.append(datafile)
         
         for filtered_datafile in filtered_datafiles:
@@ -167,6 +125,32 @@ class Database:
     
     def sort_vs_unique_pars(self):
         self.datafiles.sort(key=lambda datafile: len(datafile.unique_pars))
+
+    def slice(self, sim_setting_name, filtered_datafiles=None):
+        """
+            Returns a list of lists of DataFile, each list contains Datafiles that share 
+            the same values of all their sim_pars except the one given in `sim_setting_name`
+            Datafiles that don't share all their sim_par values (except `sim_setting_name`) with any other Datafile
+            are omitted.
+        """
+        if filtered_datafiles == None:
+            filtered_datafiles = self.datafiles
+
+        slicing = []
+        n = len(filtered_datafiles)
+        for i in range(n):
+            file1 = filtered_datafiles[i]
+            slice = [file1]
+            for j in range(i+1, n):
+                file2 = filtered_datafiles[2]
+                if set(file1.sim_settings.keys()) == set(file2.sim_settings.keys()) and \
+                    all([file1.sim_settings[key] == file2.sim_settings[key] for key in file1.sim_settings.keys() if key != sim_setting_name]):
+                    slice.append(file2)
+            if len(slice) >= 2:
+                slicing.append(slice)        
+        return slicing
+                
+
 
 
     
