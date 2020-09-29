@@ -26,16 +26,60 @@ def dict_to_string(dic, separator = "|"):
     return extension
 
 class Database:
-    def __init__(self):
+    def __init__(self, data_folder_path=None, csv_separator=" ", filename_var_separator="|"):
         self.datafiles = []
+        self.result_names_col = None
+        self.result_values_col = None
+        self.sim_settings_names_col = None
+        self.sim_settings_values_col = None
 
-    def load_from_folder(self, data_folder_path, csv_separator=" ", file_var_separator="|"):
+        if data_folder_path:
+            self.load_from_folder(data_folder_path, csv_separator, filename_var_separator)
+
+    def set_scalar_result_column_names(self, result_names_col: str, result_values_col: str):
+        r"""
+        Set the column names of the columns that contain respectively the sim_results variable names
+        and the column containing their values
+
+        Parameters
+        ----------
+
+        result_names_col : str
+            Name of the column that contains the scalar result variable names
+
+        result_values_col : str
+            Name of the column that contains the scalar result variable values
+        """
+
+        self.result_names_col = result_names_col
+        self.result_values_col = result_values_col
+    
+    def set_sim_settings_column_names(self, sim_settings_names_col: str, sim_settings_values_col: str):
+        r"""
+        Set the column names of the columns that contain respectively the sim_results variable names
+        and the column containing their values
+
+        Parameters
+        ----------
+
+        result_names_col : str
+            Name of the column that contains the scalar result variable names
+
+        result_values_col : str
+            Name of the column that contains the scalar result variable values
+        """
+
+        self.sim_settings_names_col = sim_settings_names_col
+        self.sim_settings_values_col = sim_settings_values_col
+
+
+    def load_from_folder(self, data_folder_path, csv_separator=" ", filename_var_separator="|"):
         """
             Load all CSV files form the given folder
         """
 
         filepaths = list(Path(data_folder_path).rglob("*.csv"))
-        self.datafiles += [DataFile(str(filepath), csv_separator=csv_separator, var_separator=file_var_separator) for filepath in filepaths]
+        self.datafiles += [DataFile(str(filepath), csv_separator=csv_separator, filename_var_separator=filename_var_separator) for filepath in filepaths]
 
     def file_selection_prompt(self, already_selected_files : List[DataFile] = list()) -> DataFile :
 
@@ -126,30 +170,111 @@ class Database:
     def sort_vs_unique_pars(self):
         self.datafiles.sort(key=lambda datafile: len(datafile.unique_pars))
 
-    def slice(self, sim_setting_name, filtered_datafiles=None):
-        """
-            Returns a list of lists of DataFile, each list contains Datafiles that share 
-            the same values of all their sim_pars except the one given in `sim_setting_name`
+    def slice(self, sim_setting_name: str, match_basename: bool=True, datafiles_subset: List[DataFile]=None):
+        r"""
+            Returns a list of DataFile objects that share the same `sim_settings` except the one given in `sim_setting_name`,
+            each DataFile will compile the values of the `scalar_results` of the original files. The filename of the newly created
+            files will take the basename of the files that got regroupped + "_vs_" + `sim_setting_name`, along with the sim_settings.
             Datafiles that don't share all their sim_par values (except `sim_setting_name`) with any other Datafile
             are omitted.
-        """
-        if filtered_datafiles == None:
-            filtered_datafiles = self.datafiles
 
-        slicing = []
-        n = len(filtered_datafiles)
-        for i in range(n):
-            file1 = filtered_datafiles[i]
-            slice = [file1]
-            for j in range(i+1, n):
-                file2 = filtered_datafiles[2]
-                if set(file1.sim_settings.keys()) == set(file2.sim_settings.keys()) and \
+            Parameters
+            ----------
+
+            sim_setting_name : str
+                The name of the sim_setting that is permitted to vary, all the others will be fixed (per newly created DataFile)
+
+            match_basename : bool
+                The desired column name to retrieve, or mathematical expression involving the dataset's column
+                names to calculate and return
+
+            datafiles_subset : list[DataFile] or None
+                a subset of DataFile objects to look into, if set to None, all the DataFiles loaded in the Database instance
+                will be used.
+
+            Returns
+            -------
+
+            A list of `type` containing the result of `expr`
+        """
+        if datafiles_subset == None:
+            datafiles_subset = self.datafiles
+
+        # first: calcualte a List of List of Datafiles
+        slicings = []
+        n = len(datafiles_subset)
+        remaining_datafiles = set(datafiles_subset)
+        while len(remaining_datafiles) >= 2:
+            file1 = remaining_datafiles.pop()            
+
+            #pick a file that contains `sim_setting_name` in it sim_settings keys
+            while sim_setting_name not in file1.sim_settings.keys():
+                file1 = remaining_datafiles.pop()
+            
+            data_slice = []
+            for file2 in remaining_datafiles:
+                if (not match_basename or file1.base_name == file2.base_name) and \
+                    set(file1.sim_settings.keys()) == set(file2.sim_settings.keys()) and \
                     all([file1.sim_settings[key] == file2.sim_settings[key] for key in file1.sim_settings.keys() if key != sim_setting_name]):
-                    slice.append(file2)
-            if len(slice) >= 2:
-                slicing.append(slice)        
-        return slicing
+                    data_slice.append(file2)
+            if data_slice:
+                for file in data_slice:
+                    remaining_datafiles.remove(file)
+                data_slice.append(file1)
+                slicings.append(data_slice)
+        # Done
+        # 
+        # Second: create new datafiles from each DataFile list 
+        
+        new_datafiles = []
+        for slicing in slicings:
+            file = slicing[0]
+            sim_settings = file.sim_settings.copy()
+            del sim_settings[sim_setting_name]
+            parent_folder = str(Path(file.filepath).parent)
+
+            columns = dict()
+
+            # Define all possible key values and load scalar values
+            all_keys = set()
+            for file in slicing:
+                file.load_scalar_results(self.result_names_col, self.result_values_col)
+                all_keys.update(set(file.sim_scalar_results.keys()))
+            
+            for key in all_keys:
+                columns[key] = []
+            
+            #initialise columns[sim_setting_name] if not present in all_keys
+            sim_setting_name_already_present = True
+            if sim_setting_name not in all_keys:
+                sim_setting_name_already_present = False
+                columns[sim_setting_name] = []
+
+            for file in slicing:
+                #Append empty values for non exisiting keys
+                sub_keys = file.sim_scalar_results.keys()
+                diff = all_keys - sub_keys
+                for key in diff:
+                    columns[key].append("")
                 
+                # append existing values
+                for key, val in file.sim_scalar_results.items():
+                    columns[key].append(val)
+
+                # append the value of `sim_setting_name`
+                if not sim_setting_name_already_present:
+                    columns[sim_setting_name].append(file.sim_settings[sim_setting_name])
+
+            filepath = parent_folder + "/" + file.base_name + "_vs_" + sim_setting_name + dict_to_string(sim_settings) + ".csv"
+            datafile = DataFile(filepath)
+
+            for key, vals in columns.items():
+                datafile.assign(key, vals)
+            
+            new_datafiles.append(datafile)
+        
+        return new_datafiles
+
 
 
 

@@ -1,7 +1,5 @@
 import os
 from pathlib import Path
-
-import matplotlib as mpl
 from .datafile import DataFile
 
 import matplotlib.pyplot as plt
