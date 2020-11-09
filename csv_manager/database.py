@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from .datafile import DataFile
 
@@ -155,8 +155,12 @@ class Database:
             else:
                 return available_files[int(chosen_index)-1]
 
-    def filter_datafiles(self, keywords: list = [], filter_dict : dict = dict()) -> List[DataFile]:
+    def filter_datafiles(self, keywords: Union[list, str] = [], filter_dict : dict = dict()) -> List[DataFile]:
         filtered_datafiles = []
+
+        if isinstance(keywords, str):
+            keywords=[keywords]
+
         for datafile in self.datafiles:
             if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.sim_settings.items() for item in filter_dict.items()]):
                 filtered_datafiles.append(datafile)
