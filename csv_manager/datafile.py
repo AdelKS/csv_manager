@@ -62,15 +62,17 @@ class DataFile:
         self.sim_scalar_results = dict()
         self.unique_pars = dict()
         self.base_name = ""
+        self.file_exists = False
 
         self.columns = []
         self.column_name_to_index = dict()
 
         self.is_data_loaded = False
         self._update_base_name()
+        self._populate_sim_settings()
 
         if self.filepath.is_file():
-            self._populate_sim_settings()
+            self.file_exists = True
             self._read_column_names()
 
     def _update_base_name(self):
@@ -83,11 +85,11 @@ class DataFile:
         self.base_name += split[0]
 
     def _populate_sim_settings(self):
-        self.filename = self.filepath.name
-        if self.filename.endswith(".csv"):
-            self.filename = self.filename[:-4]
+        extless_filename = self.filepath.name
+        if extless_filename.endswith(".csv"):
+            extless_filename = extless_filename[:-4]
 
-        split = self.filename.split(self.filename_var_separator)
+        split = extless_filename.split(self.filename_var_separator)
     
         first = True
         for string in split:
@@ -181,7 +183,7 @@ class DataFile:
             del self.columns[-1]
 
 
-    def get_column_names(self, alias: str) -> typing.List[str]:
+    def get_column_names(self) -> typing.List[str]:
         r"""
         Returns the list of columns names of the loaded file given referenced by alias.
 
@@ -207,7 +209,7 @@ class DataFile:
         for name, value in zip(names_column, values_column):
             self.sim_scalar_results[name] = value
 
-    def assign(self, column_name: str, values: typing.Union[typing.List[float], typing.List[int], typing.List[str], typing.List[complex]]):
+    def set(self, column_name: str, values: typing.Union[typing.List[float], typing.List[int], typing.List[str], typing.List[complex]]):
         self.column_name_to_index[column_name] = len(self.columns)
         self.columns.append(values.copy())
 
@@ -238,7 +240,7 @@ class DataFile:
 
         """
 
-        if not self.is_data_loaded:
+        if self.file_exists and not self.is_data_loaded:
             self._load_data()
 
         data_caster_dict = {"string": identity, "float": get_float, "integer": get_integer, "complex": get_complex}

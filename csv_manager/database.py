@@ -72,6 +72,13 @@ class Database:
         self.sim_settings_names_col = sim_settings_names_col
         self.sim_settings_values_col = sim_settings_values_col
 
+    def add(self, datafiles):
+        if isinstance(datafiles, list):
+            for datafile in datafiles:
+                assert(isinstance(datafile, DataFile))
+                self.datafiles.append(datafile)
+        elif isinstance(datafiles, DataFile):
+            self.datafiles.append(datafiles)
 
     def load_from_folder(self, data_folder_path, csv_separator=" ", filename_var_separator="|"):
         """
@@ -148,7 +155,7 @@ class Database:
             else:
                 return available_files[int(chosen_index)-1]
 
-    def filter_datafiles(self, keywords: list, filter_dict : dict) -> List[DataFile]:
+    def filter_datafiles(self, keywords: list = [], filter_dict : dict = dict()) -> List[DataFile]:
         filtered_datafiles = []
         for datafile in self.datafiles:
             if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.sim_settings.items() for item in filter_dict.items()]):
@@ -208,14 +215,14 @@ class Database:
             file1 = remaining_datafiles.pop()            
 
             #pick a file that contains `sim_setting_name` in it sim_settings keys
-            while sim_setting_name not in file1.sim_settings.keys():
-                file1 = remaining_datafiles.pop()
+            if sim_setting_name not in file1.sim_settings.keys():
+                continue
             
             data_slice = []
             for file2 in remaining_datafiles:
                 if (not match_basename or file1.base_name == file2.base_name) and \
                     set(file1.sim_settings.keys()) == set(file2.sim_settings.keys()) and \
-                    all([file1.sim_settings[key] == file2.sim_settings[key] for key in file1.sim_settings.keys() if key != sim_setting_name]):
+                    all([key == sim_setting_name or file1.sim_settings[key] == file2.sim_settings[key] for key in file1.sim_settings.keys()]):
                     data_slice.append(file2)
             if data_slice:
                 for file in data_slice:
@@ -269,7 +276,7 @@ class Database:
             datafile = DataFile(filepath)
 
             for key, vals in columns.items():
-                datafile.assign(key, vals)
+                datafile.set(key, vals)
             
             new_datafiles.append(datafile)
         
