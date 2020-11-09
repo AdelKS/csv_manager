@@ -181,7 +181,7 @@ class DataFile:
             del self.columns[-1]
 
 
-    def get_column_names(self, alias: str) -> typing.List[str]:
+    def get_column_names(self) -> typing.List[str]:
         r"""
         Returns the list of columns names of the loaded file given referenced by alias.
 
