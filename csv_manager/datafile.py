@@ -243,6 +243,9 @@ class DataFile:
         if self.file_exists and not self.is_data_loaded:
             self._load_data()
 
+        if len(self.columns) == 0:
+            raise ValueError("Datafile empty, can't return any data")
+
         data_caster_dict = {"string": identity, "float": get_float, "integer": get_integer, "complex": get_complex}
 
         if data_type not in data_caster_dict.keys():
