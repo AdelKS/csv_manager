@@ -143,7 +143,7 @@ class Database:
 
             chosen_index = input("File wanted [1,{0}]: ".format(len(available_files)))
             if not chosen_index:
-                return None
+                pass
             elif chosen_index == "filter clear":
                 keywords.clear()
                 filter_dict.clear()
@@ -152,8 +152,18 @@ class Database:
                 extra_keywords, extra_filters = parse_filter_command(chosen_index[7:])
                 keywords += extra_keywords
                 filter_dict.update(extra_filters)
+            elif chosen_index.startswith("file"):
+                filename = chosen_index[5:]
+                for datafile in self.datafiles:
+                    if filename in datafile.filename:
+                        return datafile
+                print("File not found")
             else:
-                return available_files[int(chosen_index)-1]
+                try:
+                    index = int(chosen_index)
+                    return available_files[index-1]
+                except:
+                    print("Input not recognised, please try again")
 
     def filter_datafiles(self, keywords: Union[list, str] = [], filter_dict : dict = dict()) -> List[DataFile]:
         filtered_datafiles = []
