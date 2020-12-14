@@ -82,7 +82,15 @@ class Plotter():
         if 'label' in kwargs and kwargs['label']:
             self.graphs[graph_row][graph_column].legend()
         return fig
-        
+
+    def imshow(self, graph_row, graph_column, *args, **kwargs):
+        '''
+            Use the regular plt.imshow() with its args
+        '''
+        fig = self.graphs[graph_row][graph_column].imshow(*args, **kwargs)
+        if 'label' in kwargs and kwargs['label']:
+            self.graphs[graph_row][graph_column].legend()
+        return fig        
 
     def set(self, row, col, **kwargs):
         self.graphs[row][col].set(**kwargs)
