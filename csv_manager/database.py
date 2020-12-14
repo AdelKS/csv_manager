@@ -2,28 +2,7 @@ from pathlib import Path
 from typing import List, Union
 
 from .datafile import DataFile
-
-def concatenate(string_list, inter_prepend="", return_prepend="", return_every=None):
-    res = return_prepend
-    for i, string in enumerate(string_list):
-        res += string + "," + inter_prepend
-        if return_every and i % return_every == 0 and i != 0:
-            res += "\n" + return_prepend
-    return res
-
-
-def dict_to_string(dic, separator = "|"):
-    extension = str()
-    if dic:
-        extension += separator
-    for i, (key, val) in enumerate(sorted(dic.items())):
-        if isinstance(val, float):
-            extension += key + "=" + "{0:.5g}".format(val)
-        else:
-            extension += key + "=" + str(val)
-        if i < len(dic) - 1:
-            extension += separator
-    return extension
+from .misc import *
 
 class Database:
     def __init__(self, data_folder_path=None, csv_separator=" ", filename_var_separator="|"):
