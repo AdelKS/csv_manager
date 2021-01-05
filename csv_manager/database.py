@@ -123,6 +123,8 @@ class Database:
             chosen_index = input("File wanted [1,{0}]: ".format(len(available_files)))
             if not chosen_index:
                 pass
+            elif chosen_index=="done":
+                return None
             elif chosen_index == "filter clear":
                 keywords.clear()
                 filter_dict.clear()
