@@ -42,6 +42,7 @@ class Plotter():
 
         self.fig_num = fig_num
         self.fig = None
+        self.plt = plt
 
         self._instance_new_subplots()
 
