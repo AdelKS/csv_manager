@@ -53,7 +53,9 @@ class DataFile:
         return separately any column of the file and any mathematical combinations of its columns.
     """
 
-    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" "):       
+    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" ",
+                       sim_setting_name="sim_setting_name",
+                       sim_setting_value="sim_setting_value"):       
         self.csv_separator = csv_separator
         self.filepath = Path(filepath)
         self.filename = self.filepath.name
@@ -69,11 +71,16 @@ class DataFile:
 
         self.is_data_loaded = False
         self._update_base_name()
-        self._populate_sim_settings()
 
         if self.filepath.is_file():
             self.file_exists = True
-            self._read_column_names()
+            self._read_column_names()        
+        
+            if  sim_setting_name in self.column_name_to_index.keys() and \
+                sim_setting_value in self.column_name_to_index.keys() :
+                self._populate_sim_settings("columns", sim_setting_name, sim_setting_value)
+            else:
+                self._populate_sim_settings()
 
     def _update_base_name(self):
         extless_filename = self.filename
@@ -84,25 +91,32 @@ class DataFile:
 
         self.base_name += split[0]
 
-    def _populate_sim_settings(self):
-        extless_filename = self.filepath.name
-        if extless_filename.endswith(".csv"):
-            extless_filename = extless_filename[:-4]
+    def _populate_sim_settings(self, source="filename", 
+                                    sim_setting_name="sim_setting_name",
+                                    sim_setting_value="sim_setting_value"):
 
-        split = extless_filename.split(self.filename_var_separator)
-    
-        first = True
-        for string in split:
-            if first:
-                first = False
-            else:
-                first = False
-                key, value = string.split("=")
-                self.sim_settings[key] = value
+        if source == "columns":
+            self.sim_settings = self._load_scalar_results(result_names_col=sim_setting_name, result_values_col=sim_setting_value)
+        
+        else:        
+            extless_filename = self.filepath.name
+            if extless_filename.endswith(".csv"):
+                extless_filename = extless_filename[:-4]
+
+            split = extless_filename.split(self.filename_var_separator)
+        
+            first = True
+            for string in split:
+                if first:
+                    first = False
+                else:
+                    first = False
+                    key, value = string.split("=")
+                    self.sim_settings[key] = value
 
         self.unique_pars = self.sim_settings.copy()
 
-    def _read_column_names(self):  
+    def _read_column_names(self):
        
         with open(self.filepath) as openFile:
             reader = csv.reader(openFile, delimiter=self.csv_separator)
@@ -201,13 +215,42 @@ class DataFile:
         
         return list(self.column_name_to_index.keys())
 
+    def load_sim_results(self, result_names_col, result_values_col):
+        self.sim_scalar_results = self._load_scalar_results(result_names_col, result_values_col)
 
-    def load_scalar_results(self, result_names_col, result_values_col):
-        names_column = self.get(result_names_col, data_type="string")
-        values_column = self.get(result_values_col, data_type="string")
+    def _load_scalar_results(self, result_names_col, result_values_col):
+        column_names = self.get_column_names()
+        if result_names_col not in column_names or result_values_col not in column_names:
+            return
 
-        for name, value in zip(names_column, values_column):
-            self.sim_scalar_results[name] = value
+        scalar_results = dict()
+
+        if not self.is_data_loaded:
+            with open(self.filepath) as openFile:
+                reader = csv.reader(openFile, delimiter=self.csv_separator)
+                name_index = column_names.index(result_names_col)
+                val_index = column_names.index(result_values_col)
+            
+                for row_number, row_content in enumerate(reader):                
+                    if row_number > 0:             
+                        scalar_name = ""
+                        scalar_val = ""
+                        for col, val in enumerate(row_content):
+                            if col == name_index:
+                                scalar_name = val
+                            elif col == val_index:
+                                scalar_val = val
+                        if scalar_name and scalar_val:
+                            scalar_results[scalar_name] = scalar_val
+        
+        else:
+            names_column = self.get(result_names_col, data_type="string")
+            values_column = self.get(result_values_col, data_type="string")
+
+            for name, value in zip(names_column, values_column):
+                scalar_results[name] = value
+        
+        return scalar_results
 
     def set(self, column_name: str, values: typing.Union[typing.List[float], typing.List[int], typing.List[str], typing.List[complex]]):
         self.column_name_to_index[column_name] = len(self.columns)
