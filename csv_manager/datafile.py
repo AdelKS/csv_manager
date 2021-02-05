@@ -53,15 +53,13 @@ class DataFile:
         return separately any column of the file and any mathematical combinations of its columns.
     """
 
-    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" ",
-                       sim_setting_name="sim_setting_name",
-                       sim_setting_value="sim_setting_value"):       
+    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" "):       
         self.csv_separator = csv_separator
         self.filepath = Path(filepath)
         self.filename = self.filepath.name
         self.filename_var_separator = filename_var_separator
         self.sim_settings = dict()
-        self.sim_scalar_results = dict()
+        self.vars = dict()
         self.unique_pars = dict()
         self.base_name = ""
         self.file_exists = False
@@ -72,15 +70,16 @@ class DataFile:
         self.is_data_loaded = False
         self._update_base_name()
 
+        self.results_possible_col_names = [("result_name", "result_value")]
+        self.settings_possible_col_names = [("sim_setting_name", "sim_setting_value"), 
+                                            ("setting_name", "setting_value")]
+
         if self.filepath.is_file():
             self.file_exists = True
             self._read_column_names()        
         
-            if  sim_setting_name in self.column_name_to_index.keys() and \
-                sim_setting_value in self.column_name_to_index.keys() :
-                self._populate_sim_settings("columns", sim_setting_name, sim_setting_value)
-            else:
-                self._populate_sim_settings()
+            self._populate_sim_settings()
+            self._populate_vars()
 
     def _update_base_name(self):
         extless_filename = self.filename
@@ -91,14 +90,16 @@ class DataFile:
 
         self.base_name += split[0]
 
-    def _populate_sim_settings(self, source="filename", 
-                                    sim_setting_name="sim_setting_name",
-                                    sim_setting_value="sim_setting_value"):
+    def _populate_sim_settings(self):
 
-        if source == "columns":
-            self.sim_settings = self._load_scalar_results(result_names_col=sim_setting_name, result_values_col=sim_setting_value)
+        self.sim_settings = dict()
+        for name_col, val_col in self.settings_possible_col_names:
+            self.sim_settings.update(self._load_scalar_results(result_names_col=name_col, result_values_col=val_col))            
         
-        else:        
+        if not self.sim_settings:
+            # Couldn't find sim settings in the file itself
+            # We try to load them from the filename
+
             extless_filename = self.filepath.name
             if extless_filename.endswith(".csv"):
                 extless_filename = extless_filename[:-4]
@@ -215,15 +216,17 @@ class DataFile:
         
         return list(self.column_name_to_index.keys())
 
-    def load_sim_results(self, result_names_col, result_values_col):
-        self.sim_scalar_results = self._load_scalar_results(result_names_col, result_values_col)
+    def _populate_vars(self):
+        self.vars = dict()
+        for name_col, val_col in self.results_possible_col_names + self.settings_possible_col_names:
+            self.vars.update(self._load_scalar_results(result_names_col=name_col, result_values_col=val_col))
 
     def _load_scalar_results(self, result_names_col, result_values_col):
+        scalar_results = dict()
+
         column_names = self.get_column_names()
         if result_names_col not in column_names or result_values_col not in column_names:
-            return
-
-        scalar_results = dict()
+            return scalar_results
 
         if not self.is_data_loaded:
             with open(self.filepath) as openFile:
