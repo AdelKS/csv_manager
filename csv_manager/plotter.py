@@ -75,7 +75,7 @@ class Plotter():
         
         return lines 
 
-    def plot_data(self, graph_row, graph_column, *args, **kwargs):
+    def plot_data(self, *args, graph_row=0, graph_column=0, **kwargs):
         '''
             Use the regular plt.plot() with its args
         '''
@@ -84,7 +84,7 @@ class Plotter():
             self.graphs[graph_row][graph_column].legend()
         return fig
 
-    def imshow(self, graph_row, graph_column, *args, **kwargs):
+    def imshow(self, *args, graph_row=0, graph_column=0, **kwargs):
         '''
             Use the regular plt.imshow() with its args
         '''
@@ -93,8 +93,8 @@ class Plotter():
             self.graphs[graph_row][graph_column].legend()
         return fig        
 
-    def set(self, row, col, **kwargs):
-        self.graphs[row][col].set(**kwargs)
+    def set(self, graph_row=0, graph_column=0, **kwargs):
+        self.graphs[graph_row][graph_column].set(**kwargs)
 
     def show(self):         
         plt.show()
