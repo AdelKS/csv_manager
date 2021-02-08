@@ -1,85 +1,55 @@
 ## csv_manager
 
-This is a python module that features three simple classes for reading (class `Reader`), plotting (class `Plotter`, using Matplotlib with Latex rendering enabled) for the plots) and filtering (class `Database`) CSV files. And also a method for writing CSVs.
+This is a python module that features three simple classes for reading (class `Reader`), plotting (class `Plotter`, using Matplotlib with Latex rendering enabled) for the plots) and managing (class `Database`) CSV files and also a method for writing CSVs.
 
 By using this module, the user avoids the cumbersome repetition of coding a csv reader using the `csv` python library then making the data in a readable structure for `plt.plot(...)`.
 
-#### Using `Reader` and `Plotter`
-
-An example is written in `example/csv_plot_example.py`, that showcases what can be done with this module:
+#### Simple single graph example
 
 ```python
-from csv_manager.plotter import Plotter
+from csv_manager import Plotter, DataFile
 # Plotter inherits the class Reader
 
-plotter = Plotter(num_rows=1, num_columns=2)
+plotter = Plotter()
 # Number of rows and columns for plt.sublots
 
-file1 = 'data_file_1.csv'
-file2 = 'data_file_2.csv'
+datafile = DataFile('data_file_1.csv')
 
-plotter.load(file1, alias='dataset1')
-plotter.load(file2, alias='dataset1')
-#Both files are loaded in the same `dataset`, if column names collide, the latest ones get "_b" appended to their name
-
-plotter.show_loaded_data()
-# prints the loaded datasets. For each dataset, is printed:
-# - the source files the data has been loaded from
-# - the column names
-
-plotter.get_column_names('dataset1')
-# returns the list of column names of the dataset `dataset1`
+datafile.get_column_names('dataset1')
+# returns the list of column names of the file `data_file_1.csv`
 
 ######################################################
 
-plotter.plot('dataset1', 'time', 'position', 0, 0, label='position $x(t)$', color='red', linestyle=':')
+plotter.plot(datafile, 'time', 'position', label='position $x(t)$', color='red', linestyle=':')
 # Starting from " label='save' [...]" the arguments are the **kwargs in https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
-plotter.plot('dataset1', 'time', 'speed', 0, 0, label='speed $v(t)$', color='blue', linestyle='--')
+plotter.plot(datafile, 'time', 'speed', label='speed $v(t)$', color='blue', linestyle='--')
 
-plotter.plot('dataset1', 'time', 'position + sqrt(2/10 * speed)', 0, 1, label='dummy curve from expression')
+plotter.plot(datafile, 'time', 'position + sqrt(2/10 * speed)', 0, 1, label='dummy curve from expression')
+# Mathematical expressions involving column names can be used
 
-plotter.plot_data(0, 0, [0, 1, 2], [0, 1, 2], label='dummy data')
+plotter.plot_data([0, 1, 2], [0, 1, 2], label='dummy data')
 
-plotter.set(0, 0, xlabel='Time ', ylabel='Position')
-# Starting from " xlabel='time' [...]" the options that can be set are the **kwargs in https://matplotlib.org/api/axes_api.html
-
-plotter.set(0, 1, xlabel='Time ', ylabel='Dummy data')
+plotter.set(xlabel='Time ', ylabel='Position')
+# the options that can be set are the **kwargs in https://matplotlib.org/api/axes_api.html
 
 plotter.show()
 ```
 
-The file `example/data_file_1.csv` looks like the following:
+The file `data_file_1.csv` can be the followin (Note that the default column separator is a single space):
 
 ```csv
-time position
-0 0
-1 5
-2 20
-3 45
-4 80
-5 125
-6 180
-7 245
-8 320
-9 405
-10 500
-```
-
-The file `example/data_file_2.csv` looks like the following:
-
-```csv
-time speed
-0 0
-1 3
-2 3.6
-3 2
-4 5
-5 8
-6 9
-7 10
-8 9.1
-9 8
-10 7
+time position speed
+0 0 0
+1 5 3
+2 20 3.6
+3 45 2
+4 80 5
+5 125 8
+6 180 9
+7 245 10
+8 320 9.2
+9 405 8
+10 500 7
 ```
 
 #### Using `Database`
@@ -87,8 +57,20 @@ time speed
 If you have a folder with lots of CSV files and find it too cumbersome to find the correct ones to plot or read. The class `Databse` is made for you!
 
 Requirements:
-- Follow a specific naming scheme on your CSV files: `filename|var1=val1|var2=val2|...|varN=valN.csv` where `|` is a separator that can be different (any string of characters).
-- Have all your CSV files in a folder (work if they are in a subfolder of that folder)
+- Have all your CSV files in a folder (still works if they are in a subfolder of that folder)
+- One of the following (or both):
+    - Follow a specific naming scheme on your CSV files: `filename|var1=val1|var2=val2|...|varN=valN.csv` where `|` is a separator that can be different (any string of characters).
+    - Have `sim_setting_name` and `sim_setting_value` columns in your datafile (names can be changed), that contains the variables that define the simulation settings, _e.g._:
+        ```
+        time speed sim_setting_name sim_setting_value
+        0 1 wind_speed 2.4
+        1 2 temp 25
+        2 4
+        3 5
+        ...
+        ```
+
+##### Filtering
 
 Then, what you can do is to create a `Database` instance with the folder path, and then you can use its method `filter_datafiles`:
 
@@ -96,10 +78,10 @@ Then, what you can do is to create a `Database` instance with the folder path, a
 def filter_datafiles(self, file_name_base: str, filter_dict : dict) -> List[DataFile]:
 ```
 where:
-- `file_name_base` is a string that the file should contain in its filename (the text before the var definitions start)
-- `filter_dict` is a dictionnary that contains `(key, val)` pairs, both strings, that correspond to `varN=valN` in the csv files you are looking for.
+- `file_name_base` is a string that the file should contain in its filename (the text before the start of the variable definitions)
+- `filter_dict` is a dictionary that contains `(key, val)` pairs, both strings, that correspond to `varN=valN` in the csv files you are looking for.
 
-And this method will return all the files that match your filters.
+And this method will return all the files that match your filters. The retrieve a single datafile interactively, you can use the `file_selection_prompt` method from `Database`.
 
 ## Dependencies:
 
