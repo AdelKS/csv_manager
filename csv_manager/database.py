@@ -91,13 +91,15 @@ class Database:
             print("#################################")
 
             available_files = self.datafiles
+            if filter_dict or keywords:
+                available_files = self.filter_datafiles(keywords, filter_dict)  
 
             if already_selected_files:
                 self.compute_unique_pars(already_selected_files)
-                self.sort_vs_unique_pars()
+            else:
+                self.compute_unique_pars(available_files)
 
-            if filter_dict or keywords:
-                available_files = self.filter_datafiles(keywords, filter_dict)    
+            self.sort_vs_unique_pars()            
             
             print("Available files: ")        
             for i, datafile in reversed(list(enumerate(available_files))):
