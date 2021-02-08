@@ -60,6 +60,7 @@ class DataFile:
         self.filename_var_separator = filename_var_separator
         self.sim_settings = dict()
         self.vars = dict()
+        self.num_vars = dict()
         self.unique_pars = dict()
         self.base_name = ""
         self.file_exists = False
@@ -196,7 +197,12 @@ class DataFile:
         # Delete any eventual empty column
         if all([val == "" for val in self.columns[-1]]):
             del self.columns[-1]
-
+    
+    def get_num_var_names(self) -> typing.List[str]:
+        r"""
+        Returns the list of all numerically valued variables in the datafile
+        """
+        return self.vars.keys()
 
     def get_column_names(self) -> typing.List[str]:
         r"""
@@ -220,6 +226,15 @@ class DataFile:
         self.vars = dict()
         for name_col, val_col in self.results_possible_col_names + self.settings_possible_col_names:
             self.vars.update(self._load_scalar_results(result_names_col=name_col, result_values_col=val_col))
+        
+        self.num_vars = dict()
+        for key, val in self.vars.items():
+            try:
+                num_val = float(val)
+                self.num_vars[key] = num_val
+            except:
+                pass
+
 
     def _load_scalar_results(self, result_names_col, result_values_col):
         scalar_results = dict()
@@ -313,7 +328,7 @@ class DataFile:
             parser = Parser()
             expr = parser.parse(expr)
             vals = []
-            var_values_dict = dict()
+            var_values_dict = self.num_vars.copy()
                       
             for i in range(len(self.columns[0])):
                 for var_name in self.column_name_to_index.keys():
