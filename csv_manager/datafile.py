@@ -2,6 +2,7 @@ import csv
 from py_expression_eval import Parser
 from pathlib import Path
 from .writer import write
+import numpy as np
 
 import typing
 
@@ -68,7 +69,7 @@ class DataFile:
         self.columns = []
         self.column_name_to_index = dict()
 
-        self.is_data_loaded = False
+        self._is_data_loaded = False
         self._update_base_name()
 
         self.results_possible_col_names = [("result_name", "result_value")]
@@ -186,7 +187,7 @@ class DataFile:
        
         with open(self.filepath) as openFile:
             reader = csv.reader(openFile, delimiter=self.csv_separator)
-            self.is_data_loaded = True
+            self._is_data_loaded = True
         
             for row_number, row_content in enumerate(reader):                
                 if row_number > 0:             
@@ -243,7 +244,7 @@ class DataFile:
         if result_names_col not in column_names or result_values_col not in column_names:
             return scalar_results
 
-        if not self.is_data_loaded:
+        if not self._is_data_loaded:
             with open(self.filepath) as openFile:
                 reader = csv.reader(openFile, delimiter=self.csv_separator)
                 name_index = column_names.index(result_names_col)
@@ -301,7 +302,7 @@ class DataFile:
 
         """
 
-        if self.file_exists and not self.is_data_loaded:
+        if self.file_exists and not self._is_data_loaded:
             self._load_data()
 
         if len(self.columns) == 0:
@@ -336,6 +337,53 @@ class DataFile:
                 vals.append(expr.evaluate(var_values_dict))
 
             return vals
+    
+    def append_to_columns(self, new_vals: dict) -> None:
+        r"""
+        Append each value pointed by new_vals at the end of each corresponding column in the datafile. 
+        If the columns that get appended don't have the same size, they get appended empty values so
+        they are all the same size first.
+
+        Parameters
+        ----------
+
+        new_vals : dict[str, str] or dict[str, float] or dict[str, complex]
+            A dictionnary containing the (column_name, new_value) pairs, where `new_value` is to be appended
+            to `column_name`
+
+        """
+        # First: check that the user provided correct input
+        for col_name, new_val in new_vals.items():
+            if not (isinstance(col_name, str) and \
+                isinstance(new_val, (str, bool, int, float, complex, np.int, np.complex, np.float))):
+                raise ValueError("Provided `new_vals` doesn't have the correct types, aka a dict[str, number or str]")
+        
+        # Load data if not already done
+        if self.file_exists and not self._is_data_loaded:
+            self._load_data()
+        
+        # Second: create empty columns if they don't exist
+        for col_name in new_vals.keys():
+            if col_name not in self.column_name_to_index.keys():
+                self.set(col_name, [])
+
+        # Third: get size of biggest column in-file from new_vals keys
+        biggest_col_size = 0        
+        for col_name in new_vals.keys():
+            size = len(self.columns[self.column_name_to_index[col_name]])
+            if size > biggest_col_size:
+                biggest_col_size = size
+        
+        # Fourth: append empty string to smaller columns if needed
+        for col_name in new_vals.keys():
+            diff = biggest_col_size - len(self.columns[self.column_name_to_index[col_name]])
+            if diff > 0:
+                for i in range(diff):
+                    self.columns[self.column_name_to_index[col_name]].append("")
+        
+        # Fifth: append the new values
+        for col_name, new_val in new_vals.items():
+            self.columns[self.column_name_to_index[col_name]].append(str(new_val))
 
     def save_to_disk(self):
         r"""
