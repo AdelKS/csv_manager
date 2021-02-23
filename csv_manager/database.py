@@ -109,10 +109,10 @@ class Database:
 
             if already_selected_files:
                 self.compute_unique_pars(already_selected_files)
+                self.sort_vs_unique_pars(already_selected_files)  
             elif len(available_files) <= 50:
                 self.compute_unique_pars(available_files)
-
-            self.sort_vs_unique_pars()            
+                self.sort_vs_unique_pars(available_files)            
             
             print("Available files: ")  
             max_len = min(100, len(available_files))      
@@ -121,7 +121,10 @@ class Database:
                 print("    {0})  {1}".format(i+1, shortened_filename))
             
             if len(available_files) > 100:
-                print("NOTE: Number of available files is too big and got truncated, please use filters")
+                print("################################################################################")
+                print("NOTE: Number of available files is too big and got truncated,")
+                print("      please use filters to query the entire database")
+                print("################################################################################")
             
             if filter_dict or keywords:
                 print("Used filters:")
@@ -173,7 +176,10 @@ class Database:
             keywords=[keywords]
 
         for datafile in datafiles:
-            if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.sim_settings.items() for item in filter_dict.items()]):
+            if all([keyword in datafile.base_name for keyword in keywords]) and \
+                set(filter_dict.keys()) <= set(datafile.sim_settings.keys()) and \
+                all([datafile.sim_settings[filter_key].startswith(filter_val) for filter_key, filter_val in filter_dict.items()]):
+
                 filtered_datafiles.append(datafile)
         
         for filtered_datafile in filtered_datafiles:
@@ -183,14 +189,13 @@ class Database:
 
     def compute_unique_pars(self, datafiles_subset : list):
         """ 
-        Computes the unique parameters for each datafile in self.datafiles with respect
-        to datafules_subset list.
+        Computes the unique parameters for each datafile among the datafiles in datafiles_subset
         """
-        for datafile in self.datafiles:
+        for datafile in datafiles_subset:
             datafile.compute_unique_pars(datafiles_subset)
     
-    def sort_vs_unique_pars(self):
-        self.datafiles.sort(key=lambda datafile: len(datafile.unique_pars))
+    def sort_vs_unique_pars(self, datafiles):
+        datafiles.sort(key=lambda datafile: len(datafile.unique_pars))
 
     def slice(self, sim_setting_name: str, match_basename: bool=True, datafiles_subset: List[DataFile]=None):
         r"""
