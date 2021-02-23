@@ -4,6 +4,8 @@ from typing import List, Union
 from .datafile import DataFile
 from .misc import *
 
+import time
+
 class Database:
     def __init__(self, data_folder_path=None, csv_separator=" ", filename_var_separator="|"):
         self.datafiles = []
@@ -63,9 +65,21 @@ class Database:
         """
             Load all CSV files form the given folder
         """
-
+        print("Querying available CSV files")
         filepaths = list(Path(data_folder_path).rglob("*.csv"))
-        self.datafiles += [DataFile(str(filepath), csv_separator=csv_separator, filename_var_separator=filename_var_separator) for filepath in filepaths]
+        
+        start = time.perf_counter()        
+        current_elapsed_time = 0
+        self.datafiles = []
+        N = len(filepaths)
+
+        print("Loading {} CSV files in database".format(N))
+        for index, filepath in enumerate(filepaths):
+            self.datafiles.append(DataFile(str(filepath), csv_separator=csv_separator, filename_var_separator=filename_var_separator))
+            new_elapsed_time = int(time.perf_counter() - start)
+            if new_elapsed_time != current_elapsed_time:
+                current_elapsed_time = new_elapsed_time
+                print("  Progress = {:.0f} %".format(100*(index+1)/N))
 
     def file_selection_prompt(self, already_selected_files : List[DataFile] = list()) -> DataFile :
 
@@ -85,26 +99,29 @@ class Database:
         
         keywords = []
         filter_dict = {}
-        available_files = []
+        available_files = self.datafiles
 
         while True:    
             print("#################################")
 
-            available_files = self.datafiles
             if filter_dict or keywords:
-                available_files = self.filter_datafiles(keywords, filter_dict)  
+                available_files = self.filter_datafiles(available_files, keywords, filter_dict)  
 
             if already_selected_files:
                 self.compute_unique_pars(already_selected_files)
-            else:
+            elif len(available_files) <= 50:
                 self.compute_unique_pars(available_files)
 
             self.sort_vs_unique_pars()            
             
-            print("Available files: ")        
-            for i, datafile in reversed(list(enumerate(available_files))):
+            print("Available files: ")  
+            max_len = min(100, len(available_files))      
+            for i, datafile in reversed(list(enumerate(available_files[:max_len]))):
                 shortened_filename = datafile.base_name + dict_to_string(datafile.unique_pars, separator=datafile.filename_var_separator)               
                 print("    {0})  {1}".format(i+1, shortened_filename))
+            
+            if len(available_files) > 100:
+                print("NOTE: Number of available files is too big and got truncated, please use filters")
             
             if filter_dict or keywords:
                 print("Used filters:")
@@ -122,7 +139,7 @@ class Database:
                 for plotted_datafile in already_selected_files:
                     print("    - " + plotted_datafile.filename)
 
-            chosen_index = input("File wanted [1,{0}]: ".format(len(available_files)))
+            chosen_index = input("File wanted [1,{0}]: ".format(len(available_files[:max_len])))
             if not chosen_index:
                 pass
             elif chosen_index=="done":
@@ -130,6 +147,7 @@ class Database:
             elif chosen_index == "filter clear":
                 keywords.clear()
                 filter_dict.clear()
+                available_files = self.datafiles
             elif chosen_index.startswith("filter"):
                 print("Parsing: " + chosen_index[7:])
                 extra_keywords, extra_filters = parse_filter_command(chosen_index[7:])
@@ -146,15 +164,15 @@ class Database:
                     index = int(chosen_index)
                     return available_files[index-1]
                 except:
-                    print("Input not recognised, please try again")
+                    print("Input not recognized, please try again")
 
-    def filter_datafiles(self, keywords: Union[list, str] = [], filter_dict : dict = dict()) -> List[DataFile]:
+    def filter_datafiles(self, datafiles, keywords: Union[list, str] = [], filter_dict : dict = dict()) -> List[DataFile]:
         filtered_datafiles = []
 
         if isinstance(keywords, str):
             keywords=[keywords]
 
-        for datafile in self.datafiles:
+        for datafile in datafiles:
             if all([keyword in datafile.base_name for keyword in keywords]) and all([item in datafile.sim_settings.items() for item in filter_dict.items()]):
                 filtered_datafiles.append(datafile)
         
