@@ -385,11 +385,19 @@ class DataFile:
         for col_name, new_val in new_vals.items():
             self.columns[self.column_name_to_index[col_name]].append(str(new_val))
 
-    def save_to_disk(self):
+    def save_to_disk(self, column_name_order=None):
         r"""
             Saves the file's data to disk.
             Warning: if the Datafile has been loaded from a file, it will overwrite it with any changes that has been made 
             to the class instance.
         """
-        data_array = [[key, *self.columns[self.column_name_to_index[key]]] for key in self.column_name_to_index.keys()]
+        remaining_column_names = [name for (name, index) in sorted(self.column_name_to_index.items(), key=lambda item: item[1])]
+        data_array = []
+        if column_name_order:
+            for column_name in column_name_order:
+                if column_name in remaining_column_names:
+                    remaining_column_names.remove(column_name)
+                    data_array += [[column_name, *self.columns[self.column_name_to_index[column_name]]]]
+
+        data_array += [[key, *self.columns[self.column_name_to_index[key]]] for key in remaining_column_names]
         write(data_array, self.filepath, list_type = 'columns', separator=' ')
