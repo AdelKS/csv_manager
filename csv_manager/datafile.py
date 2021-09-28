@@ -50,11 +50,11 @@ def is_float(s):
 
 class DataFile:
     r"""
-        A class that represents a single CSV file, can load CSV files with arbitrary separators. It can 
+        A class that represents a single CSV file, can load CSV files with arbitrary separators. It can
         return separately any column of the file and any mathematical combinations of its columns.
     """
 
-    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" "):       
+    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" "):
         self.csv_separator = csv_separator
         self.filepath = Path(filepath)
         self.filename = self.filepath.name
@@ -73,13 +73,13 @@ class DataFile:
         self._update_base_name()
 
         self.results_possible_col_names = [("result_name", "result_value")]
-        self.settings_possible_col_names = [("sim_setting_name", "sim_setting_value"), 
+        self.settings_possible_col_names = [("sim_setting_name", "sim_setting_value"),
                                             ("setting_name", "setting_value")]
 
         if self.filepath.is_file():
             self.file_exists = True
-            self._read_column_names()        
-        
+            self._read_column_names()
+
             self._populate_sim_settings()
             self._populate_vars()
 
@@ -88,7 +88,7 @@ class DataFile:
         if extless_filename.endswith(".csv"):
             extless_filename = extless_filename[:-4]
 
-        split = extless_filename.split(self.filename_var_separator)    
+        split = extless_filename.split(self.filename_var_separator)
 
         self.base_name += split[0]
 
@@ -96,8 +96,8 @@ class DataFile:
 
         self.sim_settings = dict()
         for name_col, val_col in self.settings_possible_col_names:
-            self.sim_settings.update(self._load_scalar_results(result_names_col=name_col, result_values_col=val_col))            
-        
+            self.sim_settings.update(self._load_scalar_results(result_names_col=name_col, result_values_col=val_col))
+
         if not self.sim_settings:
             # Couldn't find sim settings in the file itself
             # We try to load them from the filename
@@ -107,7 +107,7 @@ class DataFile:
                 extless_filename = extless_filename[:-4]
 
             split = extless_filename.split(self.filename_var_separator)
-        
+
             first = True
             for string in split:
                 if first:
@@ -119,17 +119,23 @@ class DataFile:
 
         self.unique_pars = self.sim_settings.copy()
 
+    def add_sim_setting(name: str, value: str):
+        self.sim_settings[name] = value
+        try:
+            num_val = float(value)
+            self.num_vars[name] = num_val
+
     def _read_column_names(self):
-       
+
         with open(self.filepath) as openFile:
             reader = csv.reader(openFile, delimiter=self.csv_separator)
-            
+
             row_content = reader.__next__()
 
-            for col, val in enumerate(row_content):                                   
+            for col, val in enumerate(row_content):
                 col_name = val
-                if col_name:  
-                    first = True                         
+                if col_name:
+                    first = True
                     while col_name in self.column_name_to_index:
                         if first:
                             col_name += "_"
@@ -150,7 +156,7 @@ class DataFile:
             if not all([key in datafile.sim_settings.keys() and val == datafile.sim_settings[key] for datafile in datafiles]):
                 self.unique_pars[key] = val
 
-    def _load_data(self):   
+    def _load_data(self):
         r"""
         Loads the CSV file pointed by `csv_file` into memory. This step
         should be done first before requesting any data from the file through
@@ -165,11 +171,11 @@ class DataFile:
         alias : str
             The alias to give to the file, the data in the file can be accessed with it. If
             the user loads two files and give the same alias for both, their data will be put
-            together: if two columns share the same name the last one loaded will have "_b" 
+            together: if two columns share the same name the last one loaded will have "_b"
             appended to its name.
 
         csv_separator : str
-            The separator string used to separate between columns at any given line in the 
+            The separator string used to separate between columns at any given line in the
             CSV file. The default is a blank space ' ' (even though the name CSV says otherwise)
 
         """
@@ -179,26 +185,26 @@ class DataFile:
             if self.columns:
                 current_row_num = len(self.columns[0])
                 assert(all([len(column) == current_row_num for column in self.columns]))
-            
+
             current_column_num = len(self.columns)
             if new_column_num >= current_column_num:
                 self.columns += [ ["" for j in range(current_row_num)] for i in range(new_column_num - current_column_num)]
 
-       
+
         with open(self.filepath) as openFile:
             reader = csv.reader(openFile, delimiter=self.csv_separator)
             self._is_data_loaded = True
-        
-            for row_number, row_content in enumerate(reader):                
-                if row_number > 0:             
+
+            for row_number, row_content in enumerate(reader):
+                if row_number > 0:
                     extend_columns(len(row_content))
                     for col, val in enumerate(row_content):
                         self.columns[col].append(val)
-        
+
         # Delete any eventual empty column
         if all([val == "" for val in self.columns[-1]]):
             del self.columns[-1]
-    
+
     def get_num_var_names(self) -> typing.List[str]:
         r"""
         Returns the list of all numerically valued variables in the datafile
@@ -213,21 +219,21 @@ class DataFile:
         ----------
 
         alias : str
-            The alias of the dataset for which to return the column names. 
+            The alias of the dataset for which to return the column names.
 
         Returns
         -------
 
         A list of strings, each being a column name
         """
-        
+
         return list(self.column_name_to_index.keys())
 
     def _populate_vars(self):
         self.vars = dict()
         for name_col, val_col in self.results_possible_col_names + self.settings_possible_col_names:
             self.vars.update(self._load_scalar_results(result_names_col=name_col, result_values_col=val_col))
-        
+
         self.num_vars = dict()
         for key, val in self.vars.items():
             try:
@@ -249,9 +255,9 @@ class DataFile:
                 reader = csv.reader(openFile, delimiter=self.csv_separator)
                 name_index = column_names.index(result_names_col)
                 val_index = column_names.index(result_values_col)
-            
-                for row_number, row_content in enumerate(reader):                
-                    if row_number > 0:             
+
+                for row_number, row_content in enumerate(reader):
+                    if row_number > 0:
                         scalar_name = ""
                         scalar_val = ""
                         for col, val in enumerate(row_content):
@@ -261,14 +267,14 @@ class DataFile:
                                 scalar_val = val
                         if scalar_name and scalar_val:
                             scalar_results[scalar_name] = scalar_val
-        
+
         else:
             names_column = self.get(result_names_col, data_type="string")
             values_column = self.get(result_values_col, data_type="string")
 
             for name, value in zip(names_column, values_column):
                 scalar_results[name] = value
-        
+
         return scalar_results
 
     def set(self, column_name: str, values: typing.Union[typing.List[float], typing.List[int], typing.List[str], typing.List[complex]]):
@@ -317,11 +323,11 @@ class DataFile:
             # the column's index is given
             index = expr
             return [data_caster_dict[data_type](val) for val in self.columns[index]]
-        
+
         elif expr in self.column_name_to_index:
             # a column name has been given
             return [data_caster_dict[data_type](val) for val in self.columns[self.column_name_to_index[expr]]]
-        
+
         else:
             if data_type == "string":
                 raise ValueError(" `data_type' can't be `string' if a mathematical expression is asked ")
@@ -330,17 +336,17 @@ class DataFile:
             expr = parser.parse(expr)
             vals = []
             var_values_dict = self.num_vars.copy()
-                      
+
             for i in range(len(self.columns[0])):
                 for var_name in self.column_name_to_index.keys():
                     var_values_dict[var_name] = data_caster_dict[data_type](self.columns[self.column_name_to_index[var_name]][i])
                 vals.append(expr.evaluate(var_values_dict))
 
             return vals
-    
+
     def append_to_columns(self, new_vals: dict) -> None:
         r"""
-        Append each value pointed by new_vals at the end of each corresponding column in the datafile. 
+        Append each value pointed by new_vals at the end of each corresponding column in the datafile.
         If the columns that get appended don't have the same size, they get appended empty values so
         they are all the same size first.
 
@@ -357,30 +363,30 @@ class DataFile:
             if not (isinstance(col_name, str) and \
                 isinstance(new_val, (str, bool, int, float, complex, np.int, np.complex, np.float))):
                 raise ValueError("Provided `new_vals` doesn't have the correct types, aka a dict[str, number or str]")
-        
+
         # Load data if not already done
         if self.file_exists and not self._is_data_loaded:
             self._load_data()
-        
+
         # Second: create empty columns if they don't exist
         for col_name in new_vals.keys():
             if col_name not in self.column_name_to_index.keys():
                 self.set(col_name, [])
 
         # Third: get size of biggest column in-file from new_vals keys
-        biggest_col_size = 0        
+        biggest_col_size = 0
         for col_name in new_vals.keys():
             size = len(self.columns[self.column_name_to_index[col_name]])
             if size > biggest_col_size:
                 biggest_col_size = size
-        
+
         # Fourth: append empty string to smaller columns if needed
         for col_name in new_vals.keys():
             diff = biggest_col_size - len(self.columns[self.column_name_to_index[col_name]])
             if diff > 0:
                 for i in range(diff):
                     self.columns[self.column_name_to_index[col_name]].append("")
-        
+
         # Fifth: append the new values
         for col_name, new_val in new_vals.items():
             self.columns[self.column_name_to_index[col_name]].append(str(new_val))
@@ -388,7 +394,7 @@ class DataFile:
     def save_to_disk(self, column_name_order=None):
         r"""
             Saves the file's data to disk.
-            Warning: if the Datafile has been loaded from a file, it will overwrite it with any changes that has been made 
+            Warning: if the Datafile has been loaded from a file, it will overwrite it with any changes that has been made
             to the class instance.
         """
         remaining_column_names = [name for (name, index) in sorted(self.column_name_to_index.items(), key=lambda item: item[1])]

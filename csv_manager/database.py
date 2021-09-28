@@ -34,7 +34,7 @@ class Database:
 
         self.result_names_col = result_names_col
         self.result_values_col = result_values_col
-    
+
     def set_sim_settings_column_names(self, sim_settings_names_col: str, sim_settings_values_col: str):
         r"""
         Set the column names of the columns that contain respectively the sim_results variable names
@@ -67,8 +67,8 @@ class Database:
         """
         print("Querying available CSV files")
         filepaths = list(Path(data_folder_path).rglob("*.csv"))
-        
-        start = time.perf_counter()        
+
+        start = time.perf_counter()
         current_elapsed_time = 0
         self.datafiles = []
         N = len(filepaths)
@@ -96,48 +96,48 @@ class Database:
                     else:
                         filter_dict[split[0]] = split[1]
             return keywords, filter_dict
-        
+
         keywords = []
         filter_dict = {}
         available_files = self.datafiles
 
-        while True:    
+        while True:
             print("#################################")
 
             if filter_dict or keywords:
-                available_files = self.filter_datafiles(available_files, keywords, filter_dict)  
+                available_files = self.filter_datafiles(available_files, keywords, filter_dict)
 
             if already_selected_files:
                 self.compute_unique_pars(already_selected_files)
-                self.sort_vs_unique_pars(already_selected_files)  
+                self.sort_vs_unique_pars(already_selected_files)
             elif len(available_files) <= 50:
                 self.compute_unique_pars(available_files)
-                self.sort_vs_unique_pars(available_files)            
-            
-            print("Available files: ")  
-            max_len = min(100, len(available_files))      
+                self.sort_vs_unique_pars(available_files)
+
+            print("Available files: ")
+            max_len = min(100, len(available_files))
             for i, datafile in reversed(list(enumerate(available_files[:max_len]))):
-                shortened_filename = datafile.base_name + dict_to_string(datafile.unique_pars, separator=datafile.filename_var_separator)               
+                shortened_filename = datafile.base_name + dict_to_string(datafile.unique_pars, separator=datafile.filename_var_separator)
                 print("    {0})  {1}".format(i+1, shortened_filename))
-            
+
             if len(available_files) > 100:
                 print("################################################################################")
                 print("NOTE: Number of available files is too big and got truncated,")
                 print("      please use filters to query the entire database")
                 print("################################################################################")
-            
+
             if filter_dict or keywords:
                 print("Used filters:")
-                if keywords:                
+                if keywords:
                     print("    Contains: " + concatenate(keywords, inter_prepend=" "))
 
                 if filter_dict:
                     filter_string = ""
                     for key, val in filter_dict.items():
                         filter_string += "{0}={1}  ".format(key, val)
-                    print("    Variable definitions: " + filter_string) 
+                    print("    Variable definitions: " + filter_string)
 
-            if already_selected_files:            
+            if already_selected_files:
                 print("Already selected files: ")
                 for plotted_datafile in already_selected_files:
                     print("    - " + plotted_datafile.filename)
@@ -181,19 +181,19 @@ class Database:
                 all([datafile.sim_settings[filter_key].startswith(filter_val) for filter_key, filter_val in filter_dict.items()]):
 
                 filtered_datafiles.append(datafile)
-        
+
         for filtered_datafile in filtered_datafiles:
             filtered_datafile.compute_unique_pars(filtered_datafiles)
 
         return filtered_datafiles
 
     def compute_unique_pars(self, datafiles_subset : list):
-        """ 
+        """
         Computes the unique parameters for each datafile among the datafiles in datafiles_subset
         """
         for datafile in datafiles_subset:
             datafile.compute_unique_pars(datafiles_subset)
-    
+
     def sort_vs_unique_pars(self, datafiles):
         datafiles.sort(key=lambda datafile: len(datafile.unique_pars))
 
@@ -232,12 +232,12 @@ class Database:
         n = len(datafiles_subset)
         remaining_datafiles = set(datafiles_subset)
         while len(remaining_datafiles) >= 2:
-            file1 = remaining_datafiles.pop()            
+            file1 = remaining_datafiles.pop()
 
             #pick a file that contains `sim_setting_name` in it sim_settings keys
             if sim_setting_name not in file1.sim_settings.keys():
                 continue
-            
+
             data_slice = []
             for file2 in remaining_datafiles:
                 if (not match_basename or file1.base_name == file2.base_name) and \
@@ -250,9 +250,9 @@ class Database:
                 data_slice.append(file1)
                 slicings.append(data_slice)
         # Done
-        # 
-        # Second: create new datafiles from each DataFile list 
-        
+        #
+        # Second: create new datafiles from each DataFile list
+
         new_datafiles = []
         for slicing in slicings:
             file = slicing[0]
@@ -267,10 +267,10 @@ class Database:
             for file in slicing:
                 file.load_scalar_results(self.result_names_col, self.result_values_col)
                 all_keys.update(set(file.sim_scalar_results.keys()))
-            
+
             for key in all_keys:
                 columns[key] = []
-            
+
             #initialise columns[sim_setting_name] if not present in all_keys
             sim_setting_name_already_present = True
             if sim_setting_name not in all_keys:
@@ -283,7 +283,7 @@ class Database:
                 diff = all_keys - sub_keys
                 for key in diff:
                     columns[key].append("")
-                
+
                 # append existing values
                 for key, val in file.sim_scalar_results.items():
                     columns[key].append(val)
@@ -297,12 +297,11 @@ class Database:
 
             for key, vals in columns.items():
                 datafile.set(key, vals)
-            
+
             new_datafiles.append(datafile)
-        
+
         return new_datafiles
 
 
 
 
-    
