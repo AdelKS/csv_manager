@@ -119,11 +119,13 @@ class DataFile:
 
         self.unique_pars = self.sim_settings.copy()
 
-    def add_sim_setting(name: str, value: str):
+    def add_sim_setting(self, name: str, value: str):
         self.sim_settings[name] = value
         try:
             num_val = float(value)
             self.num_vars[name] = num_val
+        except:
+            pass
 
     def _read_column_names(self):
 
