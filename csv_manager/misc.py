@@ -9,6 +9,7 @@ def replace_unicode(string):
                         "Γ": "$\\Gamma$",
                         "μ": "$\\mu$",
                         "δ": "$\\delta$",
+                        "τ": "$\\tau$",
                         "_": ""}
 
     for key, val in replacement_dict.items():

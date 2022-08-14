@@ -7,7 +7,7 @@ from .misc import *
 import time
 
 class Database:
-    def __init__(self, data_folder_path=None, csv_separator=" ", filename_var_separator="|"):
+    def __init__(self, data_folder_path=None, csv_separator=" ", filename_var_separator="|", skip_lines=0):
         self.datafiles = []
         self.result_names_col = None
         self.result_values_col = None
@@ -15,7 +15,7 @@ class Database:
         self.sim_settings_values_col = None
 
         if data_folder_path:
-            self.load_from_folder(data_folder_path, csv_separator, filename_var_separator)
+            self.load_from_folder(data_folder_path, csv_separator, filename_var_separator, skip_lines)
 
     def set_scalar_result_column_names(self, result_names_col: str, result_values_col: str):
         r"""
@@ -61,7 +61,7 @@ class Database:
         elif isinstance(datafiles, DataFile):
             self.datafiles.append(datafiles)
 
-    def load_from_folder(self, data_folder_path, csv_separator=" ", filename_var_separator="|"):
+    def load_from_folder(self, data_folder_path, csv_separator=" ", filename_var_separator="|", skip_lines=0):
         """
             Load all CSV files form the given folder
         """
@@ -75,7 +75,14 @@ class Database:
 
         print("Loading {} CSV files in database".format(N))
         for index, filepath in enumerate(filepaths):
-            self.datafiles.append(DataFile(str(filepath), csv_separator=csv_separator, filename_var_separator=filename_var_separator))
+            self.datafiles.append(
+                DataFile(
+                    str(filepath),
+                    csv_separator=csv_separator,
+                    filename_var_separator=filename_var_separator,
+                    skip_lines=skip_lines
+                )
+            )
             new_elapsed_time = int(time.perf_counter() - start)
             if new_elapsed_time != current_elapsed_time:
                 current_elapsed_time = new_elapsed_time
@@ -301,7 +308,3 @@ class Database:
             new_datafiles.append(datafile)
 
         return new_datafiles
-
-
-
-

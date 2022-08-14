@@ -54,7 +54,7 @@ class DataFile:
         return separately any column of the file and any mathematical combinations of its columns.
     """
 
-    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" "):
+    def __init__(self, filepath="", filename_var_separator="|", csv_separator=" ", skip_lines=0):
         self.csv_separator = csv_separator
         self.filepath = Path(filepath)
         self.filename = self.filepath.name
@@ -65,6 +65,7 @@ class DataFile:
         self.unique_pars = dict()
         self.base_name = ""
         self.file_exists = False
+        self.skip_lines = skip_lines
 
         self.columns = []
         self.column_name_to_index = dict()
@@ -127,10 +128,24 @@ class DataFile:
         except:
             pass
 
+
+    def set_variable(self, name: str, value):
+        r"""
+        Temporarily set a variable inside this instance, this change is not saved to disk
+        when calling save_to_disk()
+        """
+        self.vars[name] = value
+
+    def get_variable(self, name: str):
+        return self.vars[name]
+
     def _read_column_names(self):
 
         with open(self.filepath) as openFile:
             reader = csv.reader(openFile, delimiter=self.csv_separator)
+
+            for i in range(self.skip_lines):
+                reader.__next__()
 
             row_content = reader.__next__()
 
@@ -198,7 +213,7 @@ class DataFile:
             self._is_data_loaded = True
 
             for row_number, row_content in enumerate(reader):
-                if row_number > 0:
+                if row_number > self.skip_lines:
                     extend_columns(len(row_content))
                     for col, val in enumerate(row_content):
                         self.columns[col].append(val)
@@ -280,8 +295,15 @@ class DataFile:
         return scalar_results
 
     def set(self, column_name: str, values: typing.Union[typing.List[float], typing.List[int], typing.List[str], typing.List[complex]]):
-        self.column_name_to_index[column_name] = len(self.columns)
-        self.columns.append(values.copy())
+
+        if self.file_exists and not self._is_data_loaded:
+            self._load_data()
+
+        if column_name in self.column_name_to_index:
+            self.columns[self.column_name_to_index[column_name]] = values.copy()
+        else:
+            self.column_name_to_index[column_name] = len(self.columns)
+            self.columns.append(values.copy())
 
     def get(self, expr: str, data_type: str = "float") -> typing.List[typing.Union[float, str, int, complex]]:
         r"""
