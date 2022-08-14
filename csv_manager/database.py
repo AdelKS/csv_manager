@@ -88,6 +88,8 @@ class Database:
                 current_elapsed_time = new_elapsed_time
                 print("  Progress = {:.0f} %".format(100*(index+1)/N))
 
+        self.datafiles.sort()
+
     def file_selection_prompt(self, already_selected_files : List[DataFile] = list()) -> DataFile :
 
         def parse_filter_command(command_str):

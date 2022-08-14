@@ -136,6 +136,16 @@ class DataFile:
         """
         self.vars[name] = value
 
+    def __lt__(self, other):
+        stem = self.filename[:-4] # remove the trailing ".csv"
+        other_stem = other.filename[:-4]
+        if stem.startswith(other_stem):
+            return False
+        elif stem.startswith(other_stem):
+            return True
+        else:
+            return stem < other_stem
+
     def get_variable(self, name: str):
         return self.vars[name]
 
