@@ -227,6 +227,9 @@ class DataFile:
                     extend_columns(len(row_content))
                     for col, val in enumerate(row_content):
                         self.columns[col].append(val)
+                    if len(row_content) < len(self.columns):
+                        for col in range(len(row_content), len(self.columns)):
+                            self.columns[col].append("")
 
         # Delete any eventual empty column
         if all([val == "" for val in self.columns[-1]]):
