@@ -2,15 +2,18 @@ __all__ = ["replace_unicode", "concatenate", "dict_to_string"]
 
 def replace_unicode(string):
     replacement = string
-    replacement_dict = {"α": "$\\alpha$", 
-                        "ε": "$\\varepsilon$",
-                        "γ": "$\\gamma$",
-                        "Δ": "$\\Delta$",
-                        "Γ": "$\\Gamma$",
-                        "μ": "$\\mu$",
-                        "δ": "$\\delta$",
-                        "τ": "$\\tau$",
-                        "_": ""}
+    replacement_dict = {
+        "α": "$\\alpha$",
+        "ε": "$\\varepsilon$",
+        "γ": "$\\gamma$",
+        "Δ": "$\\Delta$",
+        "Γ": "$\\Gamma$",
+        "μ": "$\\mu$",
+        "δ": "$\\delta$",
+        "τ": "$\\tau$",
+        "_": "",
+        "λ": "$\\lambda$",
+    }
 
     for key, val in replacement_dict.items():
         replacement = replacement.replace(key, val)
